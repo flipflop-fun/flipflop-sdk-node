@@ -1,0 +1,64 @@
+{
+  "name": "@flipflop-sdk/node",
+  "version": "2.0.0",
+  "description": "FlipFlop Node.js SDK for programmatic token operations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && cp -r src/idl dist/idl/",
+    "dev": "tsc --watch",
+    "lint": "prettier \"src/**/*{.js,.ts}\" --check",
+    "lint:fix": "prettier \"src/**/*{.js,.ts}\" -w",
+    "test": "mocha 'dist/test/**/*.test.js' --timeout 10000",
+    "prepublishOnly": "yarn build"
+  },
+  "keywords": [
+    "solana",
+    "flipflop",
+    "sdk",
+    "nodejs",
+    "defi",
+    "token",
+    "library"
+  ],
+  "author": "FlipFlop",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flipflop-fun/sdk.git"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.31.1",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/spl-token-metadata": "^0.1.6",
+    "@solana/web3.js": "^1.98.0",
+    "bn.js": "5.2.1",
+    "bs58": "^6.0.0",
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "@types/big.js": "^6.2.2",
+    "@types/bn.js": "5.1.1",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.0.0",
+    "chai": "^4.3.4",
+    "mocha": "^9.0.3",
+    "prettier": "^2.6.2",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
