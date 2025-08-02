@@ -22,8 +22,8 @@ interface LaunchOptions {
   keypairFile?: string;
 }
 
-// Launch token command handler
-export async function launchCommand(options: LaunchOptions) {
+// Launch token function
+export async function launch(options: LaunchOptions) {
   const rpcUrl = options.rpc || 'https://api.mainnet-beta.solana.com';
   const type = options.tokenType;
   const rpc = new Connection(rpcUrl, 'confirmed');
@@ -31,13 +31,11 @@ export async function launchCommand(options: LaunchOptions) {
 
   // Validate required parameters
   if (!options.keypairBs58 && !options.keypairFile) {
-    console.error('❌ Error: Missing --keypair-bs58 or --keypair-file parameter');
-    return;
+    throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
   }
 
   if (!options.name || !options.symbol) {
-    console.error('❌ Error: Missing --name or --symbol parameter');
-    return;
+    throw new Error('Missing --name or --symbol parameter');
   }
 
   try {
@@ -92,18 +90,8 @@ export async function launchCommand(options: LaunchOptions) {
 
     const info = await provider.connection.getAccountInfo(mintAccount);
     if (info) {
-      console.log('\n⚠️  Token Already Exists');
-      console.log('━'.repeat(50));
-      console.log(`Mint Address: ${mintAccount.toBase58()}`);
-      return;
+      throw new Error(`Token already exists: ${mintAccount.toBase58()}`);
     }
-
-    console.log('\n🚀 Creating New Token');
-    console.log('━'.repeat(50));
-    console.log(`Name: ${metadata.name}`);
-    console.log(`Symbol: ${metadata.symbol}`);
-    console.log(`URI: ${metadata.uri}`);
-    console.log(`Decimals: ${metadata.decimals}`);
 
     const mintTokenVaultAta = await getAssociatedTokenAddress(
       mintAccount, 
@@ -150,26 +138,31 @@ export async function launchCommand(options: LaunchOptions) {
 
     const tx = await provider.sendAndConfirm(transaction, [creator]);
     
-    console.log('\n✅ Token Created Successfully!');
-    console.log('━'.repeat(50));
-    console.log(`Transaction Hash: ${tx}`);
-    console.log(`Mint Address: ${mintAccount.toBase58()}`);
-    console.log(`Config Address: ${configAccount.toBase58()}`);
-    
     const configData = await parseConfigData(program, configAccount);
-    if (configData) {
-      console.log('\n⚙️  Token Configuration');
-      console.log('━'.repeat(50));
-      console.log(`Admin: ${configData.admin}`);
-      console.log(`Fee Rate: ${(configData.feeRate * 1).toFixed(2)} SOL`);
-      console.log(`Max Supply: ${configData.maxSupply.toLocaleString()}`);
-      console.log(`Initial Mint Size: ${configData.initialMintSize.toLocaleString()}`);
-      console.log(`Target Eras: ${configData.targetEras}`);
-      console.log(`Epochs Per Era: ${configData.epochesPerEra}`);
-      console.log(`Token Vault: ${configData.tokenVault}`);
-    }
     
+    // Return structured data instead of console output
+    return {
+      success: true,
+      transactionHash: tx,
+      mintAddress: mintAccount.toBase58(),
+      configAddress: configAccount.toBase58(),
+      metadata: {
+        name: metadata.name,
+        symbol: metadata.symbol,
+        uri: metadata.uri,
+        decimals: metadata.decimals
+      },
+      configuration: configData ? {
+        admin: configData.admin,
+        feeRate: configData.feeRate * 1,
+        maxSupply: configData.maxSupply,
+        initialMintSize: configData.initialMintSize,
+        targetEras: configData.targetEras,
+        epochsPerEra: configData.epochesPerEra,
+        tokenVault: configData.tokenVault
+      } : null
+    };
   } catch (error) {
-    console.error('❌ Error creating token:', error instanceof Error ? error.message : 'Unknown error');
+    throw new Error(`Failed to launch token: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

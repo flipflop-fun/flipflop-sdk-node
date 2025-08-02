@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(sed:*)",
+      "Bash(grep:*)",
+      "Bash(npm test:*)"
     ],
     "deny": []
   }

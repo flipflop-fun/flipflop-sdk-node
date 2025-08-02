@@ -4,7 +4,14 @@ import { CODE_ACCOUNT_SEED, CONFIG_DATA_SEED, REFERRAL_CODE_SEED, REFERRAL_SEED,
 import { ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { CONFIGS, getNetworkType } from './config';
 
-export async function setUrcCommand(options: any) {
+interface SetURCOptions {
+  rpc: string;
+  urc: string;
+  mint: string;
+  keypairBs58?: string;
+  keypairFile?: string;
+}
+export async function setURC(options: SetURCOptions) {
   const rpcUrl = options.rpc;
   const rpc = new Connection(rpcUrl, 'confirmed');
   const urc = options.urc;
@@ -12,8 +19,7 @@ export async function setUrcCommand(options: any) {
 
   // Validate required parameters
   if (!options.keypairBs58 && !options.keypairFile) {
-    console.error('❌ Error: Missing --keypair-bs58 or --keypair-file parameter');
-    return;
+    throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
   }
 
   try {
@@ -75,21 +81,11 @@ export async function setUrcCommand(options: any) {
     };
     const tokenMetadata = await getMetadataByMint(rpc, mintAccount);
     if (!tokenMetadata.success) {
-      console.error(`❌ Failed to get token metadata: ${tokenMetadata.message}`);
-      return;
+      throw new Error(`Failed to get token metadata: ${tokenMetadata.message}`);
     }
 
-    console.log('\n🔗 Setting Referral Code');
-    console.log('━'.repeat(50));
-    console.log(`URC: ${urc}`);
-    console.log(`Mint: ${mintAccount.toBase58()}`);
-    console.log(`Referrer: ${refAccount.publicKey.toBase58()}`);
-    
     const _name = cleanTokenName(tokenMetadata.data.name);
     const _symbol = cleanTokenName(tokenMetadata.data.symbol);
-    console.log(`Token Name: ${_name}`);
-    console.log(`Token Symbol: ${_symbol}`);
-    console.log(`Code hash: ${codeHash.toBase58()}`);
     const instructionSetReferrerCode = await program.methods
       .setReferrerCode(_name, _symbol, codeHash.toBuffer())
       .accounts(context)
@@ -108,41 +104,27 @@ export async function setUrcCommand(options: any) {
 
       transaction.add(instructionSetReferrerCode);
       const tx = await provider.sendAndConfirm(transaction, [refAccount]);
-      
-      console.log('\n✅ Referral Code Set Successfully!');
-      console.log('━'.repeat(50));
-      console.log(`Transaction Hash: ${tx}`);
-
+    
     const data = await program.account.tokenReferralData.fetch(referralAccount);
-    
-    console.log('\n📊 Referral Account Details');
-    console.log('━'.repeat(50));
-    console.log(`Referrer Address: ${refAccount.publicKey.toBase58()}`);
-    console.log(`Referrer Token Account: ${data.referrerAta.toBase58()}`);
-    console.log(`Code Hash: ${data.codeHash.toBase58()}`);
-    console.log(`Usage Count: ${data.usageCount}`);
-    
-    // Format and display activation timestamp
-    const activationDate = new Date(parseInt(data.activeTimestamp.toString()) * 1000);
-    console.log(`Activated: ${activationDate.toLocaleString()}`);
-
-    // Validation checks
-    if (data.codeHash.toBase58() !== codeHash.toBase58()) {
-      console.error('\n⚠️  Warning: Code hash mismatch detected');
-    }
-
     const codeAccountData = await program.account.codeAccountData.fetch(codeAccount);
-    if (codeAccountData.referralAccount.toBase58() !== referralAccount.toBase58()) {
-      console.error('⚠️  Warning: Referral account mismatch detected');
-    }
     
-    if (data.codeHash.toBase58() === codeHash.toBase58() && 
-        codeAccountData.referralAccount.toBase58() === referralAccount.toBase58()) {
-      console.log('\n✅ All validations passed - URC is properly configured');
-    }
-    
+    // Return structured data instead of console output
+    return {
+      transactionHash: tx,
+      urc: urc,
+      mint: mintAccount.toBase58(),
+      referrer: refAccount.publicKey.toBase58(),
+      referrerTokenAccount: data.referrerAta.toBase58(),
+      codeHash: data.codeHash.toBase58(),
+      usageCount: data.usageCount,
+      activatedAt: new Date(parseInt(data.activeTimestamp.toString()) * 1000),
+      validations: {
+        codeHashMatch: data.codeHash.toBase58() === codeHash.toBase58(),
+        referralAccountMatch: codeAccountData.referralAccount.toBase58() === referralAccount.toBase58()
+      }
+    };
   } catch (error) {
-    console.error('❌ Error setting referral code:', error instanceof Error ? error.message : 'Unknown error');
+    throw new Error(`Failed to set URC: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

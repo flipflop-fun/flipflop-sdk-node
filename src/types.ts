@@ -34,3 +34,47 @@ export interface ProviderAndProgram {
   provider: AnchorProvider;
   programId: PublicKey;
 }
+
+export interface DisplayMintOptions {
+  rpc: string;
+  mint: string;
+}
+
+export interface MintInfo {
+  mint: string;
+  name: string;
+  symbol: string;
+  uri: string;
+  isMutable: boolean;
+  configAccount: string;
+  admin: string;
+  tokenVault: string;
+  feeRate: number;
+  targetEras: number;
+  initialMintSize: number;
+  epochesPerEra: number;
+  targetSecondsPerEpoch: number;
+  reduceRatio: number;
+  maxSupply: number;
+  liquidityTokensRatio: number;
+  currentSupply: number;
+  liquidityTokensSupply: number;
+  minterTokensSupply: number;
+}
+
+export interface UrcInfo {
+  urc: string;
+  codeHash: string;
+  mint: string;
+  referrerMain: string;
+  referrerAta: string;
+  usageCount: number;
+  activationDate: string;
+  activeTimestamp: string;
+  isValid: boolean;
+}
+
+export interface GetUrcOptions {
+  rpc: string;
+  urc: string;
+}

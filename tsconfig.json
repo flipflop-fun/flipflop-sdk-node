@@ -1,6 +1,7 @@
 {
+
   "compilerOptions": {
-    "types": ["mocha", "chai", "bn.js"],
+    "types": ["jest", "node", "bn.js"],
     "typeRoots": ["./node_modules/@types"],
     "lib": ["es2015"],
     "module": "commonjs",
@@ -9,7 +10,7 @@
     "resolveJsonModule": true,
     "strict": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "declaration": true,
     "sourceMap": true
   },

@@ -11,7 +11,7 @@ interface MintOptions {
   urc: string;
 }
 
-export async function mintCommand(options: MintOptions) {
+export async function mint(options: MintOptions) {
   try {
     const rpc = new Connection(options.rpc || 'https://api.mainnet-beta.solana.com');
     const urc = options.urc;
@@ -20,18 +20,15 @@ export async function mintCommand(options: MintOptions) {
 
     // Validate required parameters
     if (!options.keypairBs58 && !options.keypairFile) {
-      console.error('Error: Missing --keypair-bs58 or --keypair-file parameter');
-      return;
+      throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
     }
     
     if (!mintAccount) {
-      console.error('Error: Missing --mint parameter');
-      return;
+      throw new Error('Missing --mint parameter');
     }
 
     if (!urc) {
-      console.error('Error: Missing --urc parameter');
-      return;
+      throw new Error('Missing --urc parameter');
     }
     
     // Load keypair and create wallet (keypair-file takes priority)
@@ -69,8 +66,7 @@ export async function mintCommand(options: MintOptions) {
 
     const metadataData = await getMetadataByMint(rpc, mintAccount);
     if (!metadataData.success) {
-      console.error('Error: Failed to get token metadata -', metadataData.message);
-      return;
+      throw new Error(`Failed to get token metadata: ${metadataData.message}`);
     }
     
     const _name = cleanTokenName(metadataData.data.name);
@@ -93,26 +89,19 @@ export async function mintCommand(options: MintOptions) {
     );
     
     if(!result?.success) {
-      console.error('Error: Mint operation failed');
-      return;
+      throw new Error('Mint operation failed');
     }
     
-    console.log('Tokens minted successfully!');
-    
-    if (result.tx) {
-      console.log('Mint operation details:');
-      console.log("=".repeat(40));
-      console.log(`Mint: ${mintAccount}`);
-      console.log(`URC: ${urc}`);
-      console.log(`Owner: ${minter.publicKey.toBase58()}`)
-      console.log(`Token Account: ${result.tokenAccount}`)
-      console.log(`Transaction Hash: ${result.tx}`);
-      console.log('')
-      console.log(`Check your token balance by:\n> spl-token balance ${mintAccount} --owner ${minter.publicKey.toBase58()}`)
-      console.log("=".repeat(40));
-    }
+    // Return structured data instead of console output
+    return {
+      success: true,
+      transactionHash: result.tx,
+      mint: mintAccount.toBase58(),
+      urc: urc,
+      owner: minter.publicKey.toBase58(),
+      tokenAccount: result.tokenAccount
+    };
   } catch (error) {
-    console.error('Error: Mint operation failed -', error);
-    process.exit(1);
+    throw new Error(`Mint operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
