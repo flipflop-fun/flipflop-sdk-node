@@ -1,5 +1,5 @@
 import { describe, it } from '@jest/globals';
-import { mintToken } from '../../src/mint';
+import { mintToken } from '../src/mint';
 
 describe('Mint token', () => {
   describe('successful mint token', () => {

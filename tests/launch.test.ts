@@ -1,5 +1,5 @@
 import { describe, it } from '@jest/globals';
-import { launchToken } from '../../src/launch';
+import { launchToken } from '../src/launch';
 
 describe('launch token', () => {
   describe('successful launch', () => {

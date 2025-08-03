@@ -1,5 +1,5 @@
 import { describe, it } from '@jest/globals';
-import { setUrc } from '../../src/set-urc';
+import { setUrc } from '../src/set-urc';
 
 describe('set urc', () => {
   describe('successful set urc', () => {

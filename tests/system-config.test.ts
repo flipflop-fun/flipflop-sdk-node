@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { getSystemConfig } from '../../src/system-config';
+import { getSystemConfig } from '../src/system-config';
 
 describe('getSystemConfig', () => {
   describe('successful retrieval', () => {

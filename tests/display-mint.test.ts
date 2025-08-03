@@ -1,5 +1,5 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { getMintData } from '../../src/display-mint';
+import { getMintData } from '../src/display-mint';
 
 describe('getMintInfo', () => {
   describe('successful retrieval', () => {
