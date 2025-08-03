@@ -3,33 +3,19 @@ import { initProvider, loadKeypairFromBase58, loadKeypairFromFile, parseConfigDa
 import { MINT_SEED, CONFIG_DATA_SEED, SYSTEM_CONFIG_SEEDS, METADATA_SEED, TOKEN_METADATA_PROGRAM_ID, TOKEN_PARAMS } from './constants';
 import { getAssociatedTokenAddress, NATIVE_MINT, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { CONFIGS, getNetworkType } from './config';
-
-// Token metadata interface
-interface TokenMetadata {
-  name: string;
-  symbol: string;
-  uri: string;
-  decimals: number;
-}
-
-interface LaunchOptions {
-  tokenType?: string;
-  name: string;
-  symbol: string;
-  uri?: string;
-  rpc?: string;
-  keypairBs58?: string;
-  keypairFile?: string;
-}
+import { ConfigAccountData, LaunchTokenOptions, LaunchTokenResponse, TokenMetadata } from './types';
 
 // Launch token function
-export async function launch(options: LaunchOptions) {
-  const rpcUrl = options.rpc || 'https://api.mainnet-beta.solana.com';
-  const type = options.tokenType;
-  const rpc = new Connection(rpcUrl, 'confirmed');
-  const config = CONFIGS[getNetworkType(rpcUrl)];
-
+export const launchToken = async (options: LaunchTokenOptions): Promise<LaunchTokenResponse> => {
   // Validate required parameters
+  if (!options.rpc) {
+    throw new Error('Missing --rpc parameter');
+  }
+
+  if (!options.tokenType) {
+    throw new Error('Missing --token-type parameter');
+  }
+
   if (!options.keypairBs58 && !options.keypairFile) {
     throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
   }
@@ -38,9 +24,13 @@ export async function launch(options: LaunchOptions) {
     throw new Error('Missing --name or --symbol parameter');
   }
 
+  const type = options.tokenType;
+  const rpc = new Connection(options.rpc, 'confirmed');
+  const config = CONFIGS[getNetworkType(options.rpc)];
+
   try {
     // Load keypair and create wallet (keypair-file takes priority)
-    const creator = options.keypairFile 
+    const creator = options.keypairFile
       ? loadKeypairFromFile(options.keypairFile)
       : loadKeypairFromBase58(options.keypairBs58!);
 
@@ -49,6 +39,7 @@ export async function launch(options: LaunchOptions) {
     // Token parameters
     const tokenName = options.name;
     const tokenSymbol = options.symbol;
+    // ######
     const tokenUri = options.uri || `https://example.com/metadata/${tokenSymbol.toLowerCase()}.json`;
 
     const initConfigData: any = TOKEN_PARAMS[type as keyof typeof TOKEN_PARAMS];
@@ -138,29 +129,16 @@ export async function launch(options: LaunchOptions) {
 
     const tx = await provider.sendAndConfirm(transaction, [creator]);
     
-    const configData = await parseConfigData(program, configAccount);
+    const configData: ConfigAccountData = await parseConfigData(program, configAccount);
     
     // Return structured data instead of console output
     return {
       success: true,
       transactionHash: tx,
-      mintAddress: mintAccount.toBase58(),
-      configAddress: configAccount.toBase58(),
-      metadata: {
-        name: metadata.name,
-        symbol: metadata.symbol,
-        uri: metadata.uri,
-        decimals: metadata.decimals
-      },
-      configuration: configData ? {
-        admin: configData.admin,
-        feeRate: configData.feeRate * 1,
-        maxSupply: configData.maxSupply,
-        initialMintSize: configData.initialMintSize,
-        targetEras: configData.targetEras,
-        epochsPerEra: configData.epochesPerEra,
-        tokenVault: configData.tokenVault
-      } : null
+      mintAddress: mintAccount,
+      configAddress: configAccount,
+      metadata: metadata,
+      configuration: configData,
     };
   } catch (error) {
     throw new Error(`Failed to launch token: ${error instanceof Error ? error.message : 'Unknown error'}`);

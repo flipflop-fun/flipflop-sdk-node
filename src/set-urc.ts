@@ -3,24 +3,29 @@ import { cleanTokenName, getMetadataByMint, initProvider, loadKeypairFromBase58,
 import { CODE_ACCOUNT_SEED, CONFIG_DATA_SEED, REFERRAL_CODE_SEED, REFERRAL_SEED, SYSTEM_CONFIG_SEEDS } from './constants';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { CONFIGS, getNetworkType } from './config';
+import { SetUrcOptions, SetUrcResponse } from './types';
 
-interface SetURCOptions {
-  rpc: string;
-  urc: string;
-  mint: string;
-  keypairBs58?: string;
-  keypairFile?: string;
-}
-export async function setURC(options: SetURCOptions) {
-  const rpcUrl = options.rpc;
-  const rpc = new Connection(rpcUrl, 'confirmed');
-  const urc = options.urc;
-  const mintAccount = new PublicKey(options.mint);
-
+export const setUrc = async (options: SetUrcOptions): Promise<SetUrcResponse> => {
   // Validate required parameters
+  if (!options.rpc) {
+    throw new Error('Missing --rpc parameter');
+  }
+
+  if (!options.urc) {
+    throw new Error('Missing --urc parameter');
+  }
+
+  if (!options.mint) {
+    throw new Error('Missing --mint parameter');
+  }
+
   if (!options.keypairBs58 && !options.keypairFile) {
     throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
   }
+
+  const rpc = new Connection(options.rpc, 'confirmed');
+  const urc = options.urc;
+  const mintAccount = new PublicKey(options.mint);
 
   try {
     // Load keypair and create wallet (keypair-file takes priority)
@@ -36,7 +41,7 @@ export async function setURC(options: SetURCOptions) {
     );
 
     const [systemConfigAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SYSTEM_CONFIG_SEEDS), (new PublicKey(CONFIGS[getNetworkType(rpcUrl)].systemManagerAccount)).toBuffer()],
+      [Buffer.from(SYSTEM_CONFIG_SEEDS), (new PublicKey(CONFIGS[getNetworkType(options.rpc)].systemManagerAccount)).toBuffer()],
       programId
     );
 
@@ -59,8 +64,7 @@ export async function setURC(options: SetURCOptions) {
     if(codeAccountInfo) {
       const codeAccountData = await program.account.codeAccountData.fetch(codeAccount);
       if (codeAccountData.referralAccount.toBase58() !== referralAccount.toBase58()) {
-        console.error('❌ Error: Referral code is already assigned to another account');
-        return;
+        throw new Error('❌ Error: Referral code is already assigned to another account');
       }
     }
 
@@ -106,22 +110,17 @@ export async function setURC(options: SetURCOptions) {
       const tx = await provider.sendAndConfirm(transaction, [refAccount]);
     
     const data = await program.account.tokenReferralData.fetch(referralAccount);
-    const codeAccountData = await program.account.codeAccountData.fetch(codeAccount);
     
     // Return structured data instead of console output
     return {
       transactionHash: tx,
       urc: urc,
-      mint: mintAccount.toBase58(),
-      referrer: refAccount.publicKey.toBase58(),
-      referrerTokenAccount: data.referrerAta.toBase58(),
-      codeHash: data.codeHash.toBase58(),
+      mint: mintAccount,
+      referrer: refAccount.publicKey,
+      referrerTokenAccount: data.referrerAta,
+      codeHash: data.codeHash,
       usageCount: data.usageCount,
-      activatedAt: new Date(parseInt(data.activeTimestamp.toString()) * 1000),
-      validations: {
-        codeHashMatch: data.codeHash.toBase58() === codeHash.toBase58(),
-        referralAccountMatch: codeAccountData.referralAccount.toBase58() === referralAccount.toBase58()
-      }
+      activatedAt: data.activeTimestamp.toNumber(),
     };
   } catch (error) {
     throw new Error(`Failed to set URC: ${error instanceof Error ? error.message : 'Unknown error'}`);

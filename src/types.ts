@@ -3,30 +3,23 @@ import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { FairMintToken } from "./types/fair_mint_token";
 
-// Basic types
-export interface KeypairInfo {
-  publicKey: string;
-  bs58Secret: string;
-  secretArray: number[];
-}
-
 // Add more types from IDL as needed
 export type NetworkType = 'local' | 'devnet' | 'mainnet';
 
-export type RemainingAccount = {
+export interface RemainingAccount {
   pubkey: PublicKey,
   isSigner: boolean,
   isWritable: boolean
 }
 
 export interface ReferralAccountData {
-    referrerMain: PublicKey;
-    referrerAta: PublicKey;
-    usageCount: number;
-    codeHash: PublicKey;
-    mint: PublicKey;
-    activeTimestamp: BN;
-    isProcessing: boolean;
+  referrerMain: PublicKey;
+  referrerAta: PublicKey;
+  usageCount: number;
+  codeHash: PublicKey;
+  mint: PublicKey;
+  activeTimestamp: BN;
+  isProcessing: boolean;
 }
 
 export interface ProviderAndProgram {
@@ -35,20 +28,20 @@ export interface ProviderAndProgram {
   programId: PublicKey;
 }
 
-export interface DisplayMintOptions {
+export interface GetMintDataOptions {
   rpc: string;
   mint: string;
 }
 
-export interface MintInfo {
-  mint: string;
+export interface GetMintDataResponse {
+  mint: PublicKey;
   name: string;
   symbol: string;
   uri: string;
   isMutable: boolean;
-  configAccount: string;
-  admin: string;
-  tokenVault: string;
+  configAccount: PublicKey;
+  admin: PublicKey;
+  tokenVault: PublicKey;
   feeRate: number;
   targetEras: number;
   initialMintSize: number;
@@ -62,19 +55,139 @@ export interface MintInfo {
   minterTokensSupply: number;
 }
 
-export interface UrcInfo {
+export interface GetUrcDataResponse {
   urc: string;
-  codeHash: string;
-  mint: string;
-  referrerMain: string;
-  referrerAta: string;
+  codeHash: PublicKey;
+  mint: PublicKey;
+  referrerMain: PublicKey;
+  referrerAta: PublicKey;
   usageCount: number;
-  activationDate: string;
-  activeTimestamp: string;
+  activeTimestamp: number;
   isValid: boolean;
 }
 
-export interface GetUrcOptions {
+export interface GetUrcDataOptions {
   rpc: string;
   urc: string;
+}
+
+// Token metadata interface
+export interface TokenMetadata {
+  name: string;
+  symbol: string;
+  uri: string;
+  decimals: number;
+}
+
+export interface LaunchTokenOptions {
+  tokenType: string;
+  name: string;
+  symbol: string;
+  uri?: string;
+  rpc: string;
+  keypairBs58?: string;
+  keypairFile?: string;
+}
+
+export interface LaunchTokenResponse {
+  success: boolean;
+  transactionHash: string;
+  mintAddress: PublicKey;
+  configAddress: PublicKey;
+  metadata: TokenMetadata;
+  configuration: ConfigAccountData
+}
+
+export interface ConfigAccountData {
+  admin: PublicKey;
+  feeRate: number;
+  maxSupply: number;
+  targetEras: number;
+  initialMintSize: number;
+  epochesPerEra: number;
+  targetSecondsPerEpoch: number;
+  reduceRatio: number;
+  tokenVault: PublicKey;
+  liquidityTokensRatio: number;
+  supply: number;
+  currentEra: number;
+  currentEpoch: number;
+  elapsedSecondsEpoch: number;
+  startTimestampEpoch: number;
+  difficultyCoefficient: number;
+  lastDifficultyCoefficient: number;
+  mintSizeEpoch: number;
+  quantityMintedEpoch: number;
+  targetMintSizeEpoch: number;
+  graduateEpoch: number;
+}
+
+export interface SystemConfigAccountOptions {
+  rpc: string;
+}
+
+export interface SystemConfigAccountData {
+  systemConfigAccount: PublicKey;
+  systemManagerAccount: PublicKey;
+  admin: PublicKey;
+  count: number;
+  referralUsageMaxCount: number;
+  protocolFeeAccount: PublicKey;
+  refundFeeRate: number;
+  referrerResetIntervalSeconds: number;
+  updateMetadataFee: number;
+  customizedDeployFee: number;
+  initPoolWsolAmount: number;
+  graduateFeeRate: number;
+  minGraduateFee: number;
+  raydiumCpmmCreateFee: number;
+}
+
+export interface SetUrcOptions {
+  rpc: string;
+  urc: string;
+  mint: string;
+  keypairBs58?: string;
+  keypairFile?: string;
+}
+
+export interface SetUrcResponse {
+  transactionHash: string;
+  urc: string;
+  mint: PublicKey;
+  referrer: PublicKey;
+  referrerTokenAccount: PublicKey;
+  codeHash: PublicKey;
+  usageCount: number;
+  activatedAt: number;
+}
+
+export interface MintTokenOptions {
+  rpc: string;
+  keypairBs58?: string;
+  keypairFile?: string;
+  mint: string;
+  urc: string;
+}
+export interface MintTokenResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    tx: string;
+    owner: PublicKey;
+    tokenAccount: PublicKey;
+  }
+}
+
+export interface InitSystemConfigOptions {
+  rpc: string;
+  keypairBs58: string;
+}
+
+export interface InitSystemConfigResponse {
+  success: boolean;
+  lookupTableAddress: PublicKey;
+  systemConfigAddress: PublicKey;
+  systemManager: PublicKey;
+  createdNewLUT: boolean;
 }

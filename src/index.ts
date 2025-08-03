@@ -1,9 +1,11 @@
 // Main SDK entry point
-export { launch } from './launch';
-export { mint } from './mint';
-export { setURC } from './set-urc';
-export { getMintInfo } from './display-mint';
-export { init } from './init';
+export { launchToken } from './launch';
+export { mintToken } from './mint';
+export { setUrc } from './set-urc';
+export { getMintData } from './display-mint';
+export { getUrcData } from './display-urc';
+export { getSystemConfig } from './system-config';
+// export { init } from './init';
 
 // Types
 export * from './types';

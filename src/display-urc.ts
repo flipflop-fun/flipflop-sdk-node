@@ -1,12 +1,20 @@
 import { Connection } from '@solana/web3.js';
 import { getURCDetails, initProviderNoSigner } from './utils';
-import { GetUrcOptions, UrcInfo } from './types';
+import { GetUrcDataOptions, GetUrcDataResponse } from './types';
 
 // Display URC command handler
-export async function getUrcInfo(options: GetUrcOptions): Promise<UrcInfo | null> {
-  const rpcUrl = options.rpc;
+export const getUrcData = async (options: GetUrcDataOptions): Promise<GetUrcDataResponse> => {
+  // Validate required parameters
+  if (!options.rpc) {
+    throw new Error('Missing --rpc parameter');
+  }
+
+  if (!options.urc) {
+    throw new Error('Missing --urc parameter');
+  }
+
+  const rpc = new Connection(options.rpc, 'confirmed');
   const urc = options.urc;
-  const rpc = new Connection(rpcUrl, 'confirmed');
 
   const { program } = await initProviderNoSigner(rpc);
 
@@ -14,21 +22,17 @@ export async function getUrcInfo(options: GetUrcOptions): Promise<UrcInfo | null
     const urcDetails = await getURCDetails(rpc, program, urc);
     
     if (!urcDetails) {
-      return null;
+      throw new Error(`❌ Failed to get URC details: ${urc}`);
     }
-
-    // Format activation timestamp
-    const activationDate = new Date(parseInt(urcDetails.activeTimestamp.toString()) * 1000);
     
     return {
       urc: urc,
-      codeHash: urcDetails.codeHash.toString(),
-      mint: urcDetails.mint.toString(),
-      referrerMain: urcDetails.referrerMain.toString(),
-      referrerAta: urcDetails.referrerAta.toString(),
+      codeHash: urcDetails.codeHash,
+      mint: urcDetails.mint,
+      referrerMain: urcDetails.referrerMain,
+      referrerAta: urcDetails.referrerAta,
       usageCount: urcDetails.usageCount,
-      activationDate: activationDate.toLocaleString(),
-      activeTimestamp: urcDetails.activeTimestamp.toString(),
+      activeTimestamp: urcDetails.activeTimestamp.toNumber(),
       isValid: true
     };
     

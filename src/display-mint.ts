@@ -1,14 +1,22 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { getMetadataByMint, initProviderNoSigner, parseConfigData } from './utils';
 import { CONFIG_DATA_SEED } from './constants';
-import { DisplayMintOptions, MintInfo } from './types';
+import { GetMintDataOptions, GetMintDataResponse } from './types';
 
 
 // Get mint information function
-export async function getMintInfo(options: DisplayMintOptions): Promise<MintInfo | null> {
-  const rpcUrl = options.rpc;
+export const getMintData = async (options: GetMintDataOptions): Promise<GetMintDataResponse> => {
+  // Validate required parameters
+  if (!options.rpc) {
+    throw new Error('Missing --rpc parameter');
+  }
+
+  if (!options.mint) {
+    throw new Error('Missing --mint parameter');
+  }
+
+  const rpc = new Connection(options.rpc, 'confirmed');
   const mintAccount = new PublicKey(options.mint);
-  const rpc = new Connection(rpcUrl, 'confirmed');
 
   const { program, programId } = await initProviderNoSigner(rpc);
 
@@ -16,8 +24,7 @@ export async function getMintInfo(options: DisplayMintOptions): Promise<MintInfo
     // Get token metadata
     const metadataData = await getMetadataByMint(rpc, mintAccount);
     if (!metadataData.success) {
-      console.error(`❌ Failed to get token metadata: ${metadataData.message}`);
-      return null;
+      throw new Error(`❌ Failed to get token metadata: ${metadataData.message}`);
     }
 
     // Get config account details
@@ -28,23 +35,22 @@ export async function getMintInfo(options: DisplayMintOptions): Promise<MintInfo
 
     const configAccountInfo = await parseConfigData(program, configAccount);
     if (!configAccountInfo) {
-      console.error('❌ Failed to get config account data');
-      return null;
+      throw new Error('❌ Failed to get config account data');
     }
 
     // Return structured data instead of console output
     const cleanName = metadataData.data.name.replace(/\x00/g, '').trim();
     const cleanSymbol = metadataData.data.symbol.replace(/\x00/g, '').trim();
     const cleanUri = metadataData.data.uri.replace(/\x00/g, '').trim();
-    const liquidityTokensRatio = parseFloat(configAccountInfo.liquidityTokensRatio);
+    const liquidityTokensRatio = configAccountInfo.liquidityTokensRatio;
     
     return {
-      mint: metadataData.mint,
+      mint: new PublicKey(metadataData.mint),
       name: cleanName,
       symbol: cleanSymbol,
       uri: cleanUri,
       isMutable: metadataData.isMutable,
-      configAccount: configAccount.toBase58(),
+      configAccount: configAccount,
       admin: configAccountInfo.admin,
       tokenVault: configAccountInfo.tokenVault,
       feeRate: configAccountInfo.feeRate * 1,
@@ -52,7 +58,7 @@ export async function getMintInfo(options: DisplayMintOptions): Promise<MintInfo
       initialMintSize: configAccountInfo.initialMintSize,
       epochesPerEra: configAccountInfo.epochesPerEra,
       targetSecondsPerEpoch: configAccountInfo.targetSecondsPerEpoch,
-      reduceRatio: 100 - parseFloat(configAccountInfo.reduceRatio) * 100,
+      reduceRatio: (100 - configAccountInfo.reduceRatio * 100) / 100,
       maxSupply: configAccountInfo.maxSupply,
       liquidityTokensRatio: configAccountInfo.liquidityTokensRatio * 100,
       currentSupply: configAccountInfo.supply,
@@ -67,7 +73,7 @@ export async function getMintInfo(options: DisplayMintOptions): Promise<MintInfo
       quantityMintedEpoch: configAccountInfo.quantityMintedEpoch,
       targetMintSizeEpoch: configAccountInfo.targetMintSizeEpoch,
       progress: (configAccountInfo.supply / configAccountInfo.maxSupply * 100).toFixed(2)
-    } as MintInfo;
+    } as GetMintDataResponse;
   } catch (error) {
     throw new Error(`Failed to get mint info: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }

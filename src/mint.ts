@@ -2,43 +2,37 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { CONFIG_DATA_SEED, REFERRAL_SEED, SYSTEM_CONFIG_SEEDS, REFERRAL_CODE_SEED } from './constants';
 import { cleanTokenName, getMetadataByMint, getURCDetails, initProvider, loadKeypairFromBase58, loadKeypairFromFile, mintBy } from './utils';
 import { CONFIGS, getNetworkType } from './config';
+import { MintTokenOptions, MintTokenResponse } from './types';
 
-interface MintOptions {
-  rpc: string;
-  keypairBs58?: string;
-  keypairFile?: string;
-  mint: string;
-  urc: string;
-}
-
-export async function mint(options: MintOptions) {
+export const mintToken = async (options: MintTokenOptions): Promise<MintTokenResponse> => {
   try {
-    const rpc = new Connection(options.rpc || 'https://api.mainnet-beta.solana.com');
+    if (!options.rpc) {
+      throw new Error('Missing --rpc parameter');
+    }
+
+    if (!options.keypairBs58 && !options.keypairFile) {
+      throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
+    }
+
+    if (!options.mint) {
+      throw new Error('Missing --mint parameter');
+    }
+
+    if (!options.urc) {
+      throw new Error('Missing --urc parameter');
+    }
+
+    const rpc = new Connection(options.rpc);
     const urc = options.urc;
     const mintAccount = new PublicKey(options.mint);
     const config = CONFIGS[getNetworkType(options.rpc)];
 
-    // Validate required parameters
-    if (!options.keypairBs58 && !options.keypairFile) {
-      throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
-    }
-    
-    if (!mintAccount) {
-      throw new Error('Missing --mint parameter');
-    }
-
-    if (!urc) {
-      throw new Error('Missing --urc parameter');
-    }
-    
     // Load keypair and create wallet (keypair-file takes priority)
     const minter = options.keypairFile 
       ? loadKeypairFromFile(options.keypairFile)
       : loadKeypairFromBase58(options.keypairBs58!);
 
     const { program, provider, programId } = await initProvider(rpc, minter);
-
-    console.log('Processing mint request...');
 
     const referrerAccount = await getURCDetails(rpc, program, urc);
     const [referralAccount] = PublicKey.findProgramAddressSync(
@@ -87,19 +81,11 @@ export async function mint(options: MintOptions) {
       new PublicKey(config.lookupTableAccount),
       protocolFeeAccount
     );
-    
-    if(!result?.success) {
-      throw new Error('Mint operation failed');
-    }
-    
-    // Return structured data instead of console output
+    // Ensure tx is always a string in the response
     return {
-      success: true,
-      transactionHash: result.tx,
-      mint: mintAccount.toBase58(),
-      urc: urc,
-      owner: minter.publicKey.toBase58(),
-      tokenAccount: result.tokenAccount
+      success: result.success,
+      message: result.message,
+      data: result.data ? result.data : undefined,
     };
   } catch (error) {
     throw new Error(`Mint operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

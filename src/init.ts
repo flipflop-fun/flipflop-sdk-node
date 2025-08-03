@@ -1,82 +1,19 @@
-import { AddressLookupTableAccount, AddressLookupTableProgram, Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
-import { loadKeypairFromBase58, checkAccountExists, initProvider } from './utils'; // Updated import
-import { RENT_PROGRAM_ID, SYSTEM_CONFIG_SEEDS } from './constants';
-import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { ASSOCIATED_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token';
-import sleep from 'sleep-promise';
-import { SYSTEM_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/native/system';
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
+import { loadKeypairFromBase58, checkAccountExists, initProvider, createLookupTable } from './utils'; // Updated import
+import { SYSTEM_CONFIG_SEEDS } from './constants';
 import { CONFIGS, getNetworkType } from './config';
-
-const createAddressLookupTable = async (
-  connection: Connection,
-  payer: Keypair,
-  addresses: PublicKey[]
-) => {
-  const slot = await connection.getSlot("finalized"); // not "confirmed"
-  
-  // Create instruction for Address Lookup Table
-  const [createIx, lutAddress] = AddressLookupTableProgram.createLookupTable({
-    authority: payer.publicKey,
-    payer: payer.publicKey,
-    recentSlot: slot,
-  });
-
-  // Create instruction to extend Address Lookup Table
-  const extendIx = AddressLookupTableProgram.extendLookupTable({
-    payer: payer.publicKey,
-    authority: payer.publicKey,
-    lookupTable: lutAddress,
-    addresses,
-  });
-  
-  // Create and send transaction
-  const tx = new Transaction()
-    .add(createIx)
-    .add(extendIx);
-
-  tx.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
-  tx.feePayer = payer.publicKey;
-  
-  await sendAndConfirmTransaction(connection, tx, [payer]);
-
-  // Wait for confirmation and fetch the table
-  await sleep(1000);
-  const accountInfo = await connection.getAccountInfo(lutAddress);
-  return new AddressLookupTableAccount({
-    key: lutAddress,
-    state: AddressLookupTableAccount.deserialize(accountInfo!.data),
-  });
-}
-
-const createLookupTable = async (
-  connection: Connection,
-  payer: Keypair,
-) => {
-  const rpc = connection.rpcEndpoint;
-  const network = getNetworkType(rpc);
-  const addresses: PublicKey[] = [
-    TOKEN_PROGRAM_ID,
-    TOKEN_2022_PROGRAM_ID,
-    SYSTEM_PROGRAM_ID,
-    RENT_PROGRAM_ID,
-    ASSOCIATED_PROGRAM_ID,
-    NATIVE_MINT,
-    new PublicKey(CONFIGS[network].cpSwapProgram),
-    new PublicKey(CONFIGS[network].cpSwapConfigAddress),
-    new PublicKey(CONFIGS[network].createPoolFeeReceive),
-  ];
-
-  // 2. Create LUT
-  const lookupTable = await createAddressLookupTable(connection, payer, addresses);
-  
-  // 3. Wait for LUT activation (must wait at least 1 slot)
-  await sleep(1000);
-  
-  return lookupTable;
-}
+import { InitSystemConfigOptions, InitSystemConfigResponse } from './types';
 
 // Init function
-export async function init(options: any) {
+export const init = async (options: InitSystemConfigOptions): Promise<InitSystemConfigResponse> => {
+  if (!options.rpc) {
+    throw new Error('Missing --rpc parameter');
+  }
+
+  if (!options.keypairBs58) {
+    throw new Error('Missing --keypair-bs58 parameter');
+  }
+
   const rpcUrl = options.rpc;
   const rpc = new Connection(rpcUrl, 'confirmed');
 
@@ -140,12 +77,12 @@ export async function init(options: any) {
   // Return structured data
   return {
     success: true,
-    lookupTableAddress: lookupTableAddress.toBase58(),
-    systemConfigAddress: systemConfigAccount.toBase58(),
-    systemManager: systemManager.publicKey.toBase58(),
+    lookupTableAddress: lookupTableAddress,
+    systemConfigAddress: systemConfigAccount,
+    systemManager: systemManager.publicKey,
     createdNewLUT,
-    systemConfigExists,
-    initializationTx,
-    configuration: existingConfig
+    // systemConfigExists,
+    // initializationTx,
+    // configuration: existingConfig
   };
 }

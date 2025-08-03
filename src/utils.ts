@@ -1,14 +1,15 @@
-import { Connection, Keypair, PublicKey, VersionedTransaction, TransactionMessage, AddressLookupTableAccount, ComputeBudgetProgram, Transaction } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, VersionedTransaction, TransactionMessage, AddressLookupTableAccount, ComputeBudgetProgram, Transaction, AddressLookupTableProgram, sendAndConfirmTransaction } from '@solana/web3.js';
 import fs from 'fs';
 import bs58 from 'bs58';
 import { AnchorProvider, BN, Program, Provider, Wallet } from '@coral-xyz/anchor';
 import { FairMintToken } from './types/fair_mint_token';
 import { ASSOCIATED_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token';
-import { ProviderAndProgram, ReferralAccountData, RemainingAccount } from './types';
-import { getAssociatedTokenAddress, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount, NATIVE_MINT } from '@solana/spl-token';
+import { ConfigAccountData, MintTokenResponse, ProviderAndProgram, ReferralAccountData, RemainingAccount } from './types';
+import { getAssociatedTokenAddress, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { CODE_ACCOUNT_SEED, METADATA_SEED, ORACLE_SEED, POOL_AUTH_SEED, POOL_LPMINT_SEED, POOL_SEED, POOL_VAULT_SEED, REFERRAL_CODE_SEED, REFUND_SEEDS, RENT_PROGRAM_ID, TOKEN_METADATA_PROGRAM_ID } from './constants';
 import { SYSTEM_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/native/system';
 import { CONFIGS, getNetworkType } from './config';
+import sleep from 'sleep-promise';
 
 export const initProvider = async (rpc: Connection, account: Keypair): Promise<ProviderAndProgram> => {
     const wallet = {
@@ -123,12 +124,12 @@ export const cleanTokenName = (str: string): string => {
   return str.replace(/\x00/g, '').trim();
 }
 
-export const parseConfigData = async (program: Program<FairMintToken> , configAccount: PublicKey): Promise<any> => {
+export const parseConfigData = async (program: Program<FairMintToken> , configAccount: PublicKey): Promise<ConfigAccountData> => {
   return new Promise((resolve, reject) => {
     program.account.tokenConfigData.fetch(configAccount).then((configData) => {
       try {
         resolve({
-          admin: configData.admin.toBase58(),
+          admin: configData.admin,
           // feeVault: configData.feeVault.toBase58(),
           feeRate: configData.feeRate.toNumber() / 10**9,
           maxSupply: new BN(configData.maxSupply).div(new BN("1000000000")).toNumber(),
@@ -137,7 +138,7 @@ export const parseConfigData = async (program: Program<FairMintToken> , configAc
           epochesPerEra: configData.epochesPerEra.toNumber(),
           targetSecondsPerEpoch: configData.targetSecondsPerEpoch.toNumber(),
           reduceRatio: configData.reduceRatio,
-          tokenVault: configData.tokenVault.toBase58(),
+          tokenVault: configData.tokenVault,
           liquidityTokensRatio: configData.liquidityTokensRatio,
           supply: configData.mintStateData.supply.toNumber() / 10**9,
           currentEra: configData.mintStateData.currentEra,
@@ -281,14 +282,13 @@ export const mintBy = async (
   connection: Connection,
   lookupTableAddress: PublicKey,
   protocolFeeAccount: PublicKey,
-) => {
+): Promise<MintTokenResponse> => {
   // check balance SOL
   let balance = await getSolanaBalance(connection, account.publicKey);
   if (balance == 0) {
     return {
       success: false,
       message: "Balance not enough",
-      solana_balance: balance,
     }
   }
 
@@ -529,13 +529,19 @@ export const mintBy = async (
 
     return {
       success: true,
-      account: account.publicKey.toBase58(),
-      tokenAccount: destination.address.toBase58(),
-      tx: result.data?.tx,
-    }
+      message: "Mint succeeded",
+      data: {
+        owner: account.publicKey,
+        tokenAccount: destination.address,
+        tx: result.data?.tx || '',
+      },
+    };
   } catch (e) {
     console.log(e);
-    return null;
+    return {
+      success: false,
+      message: `Mint failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+    };
   }
 }
 
@@ -586,9 +592,9 @@ export const compareMints = (mintA: PublicKey, mintB: PublicKey): number => {
   return 0;
 }
 
-export function getAuthAddress(
+export const getAuthAddress = (
   programId: PublicKey
-): [PublicKey, number] {
+): [PublicKey, number] => {
   const [address, bump] = PublicKey.findProgramAddressSync(
     [POOL_AUTH_SEED],
     programId
@@ -596,12 +602,12 @@ export function getAuthAddress(
   return [address, bump];
 }
 
-export function getPoolAddress(
+export const getPoolAddress = (
   ammConfig: PublicKey,
   tokenMint0: PublicKey,
   tokenMint1: PublicKey,
   programId: PublicKey
-): [PublicKey, number] {
+): [PublicKey, number] => {
   const [address, bump] = PublicKey.findProgramAddressSync(
     [
       POOL_SEED,
@@ -698,4 +704,72 @@ export const getURCDetails = async (connection: Connection, program: Program<Fai
     throw new Error('Fail to get URC data, please use another one.');
   }
   return _referralData.data;
+}
+
+export const createAddressLookupTable = async (
+  connection: Connection,
+  payer: Keypair,
+  addresses: PublicKey[]
+) => {
+  const slot = await connection.getSlot("finalized"); // not "confirmed"
+  
+  // Create instruction for Address Lookup Table
+  const [createIx, lutAddress] = AddressLookupTableProgram.createLookupTable({
+    authority: payer.publicKey,
+    payer: payer.publicKey,
+    recentSlot: slot,
+  });
+
+  // Create instruction to extend Address Lookup Table
+  const extendIx = AddressLookupTableProgram.extendLookupTable({
+    payer: payer.publicKey,
+    authority: payer.publicKey,
+    lookupTable: lutAddress,
+    addresses,
+  });
+  
+  // Create and send transaction
+  const tx = new Transaction()
+    .add(createIx)
+    .add(extendIx);
+
+  tx.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
+  tx.feePayer = payer.publicKey;
+  
+  await sendAndConfirmTransaction(connection, tx, [payer]);
+
+  // Wait for confirmation and fetch the table
+  await sleep(1000);
+  const accountInfo = await connection.getAccountInfo(lutAddress);
+  return new AddressLookupTableAccount({
+    key: lutAddress,
+    state: AddressLookupTableAccount.deserialize(accountInfo!.data),
+  });
+}
+
+export const createLookupTable = async (
+  connection: Connection,
+  payer: Keypair,
+) => {
+  const rpc = connection.rpcEndpoint;
+  const network = getNetworkType(rpc);
+  const addresses: PublicKey[] = [
+    TOKEN_PROGRAM_ID,
+    TOKEN_2022_PROGRAM_ID,
+    SYSTEM_PROGRAM_ID,
+    RENT_PROGRAM_ID,
+    ASSOCIATED_PROGRAM_ID,
+    NATIVE_MINT,
+    new PublicKey(CONFIGS[network].cpSwapProgram),
+    new PublicKey(CONFIGS[network].cpSwapConfigAddress),
+    new PublicKey(CONFIGS[network].createPoolFeeReceive),
+  ];
+
+  // 2. Create LUT
+  const lookupTable = await createAddressLookupTable(connection, payer, addresses);
+  
+  // 3. Wait for LUT activation (must wait at least 1 slot)
+  await sleep(1000);
+  
+  return lookupTable;
 }

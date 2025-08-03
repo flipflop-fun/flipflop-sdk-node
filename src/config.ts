@@ -1,4 +1,4 @@
-export function getNetworkType(rpcUrl: string): 'local' | 'devnet' | 'mainnet' {
+export const getNetworkType = (rpcUrl: string): 'local' | 'devnet' | 'mainnet' => {
   if (rpcUrl.includes('localhost') || rpcUrl.includes('127.0.0.1')) return 'local';
   if (rpcUrl.includes('devnet')) return 'devnet';
   if (rpcUrl.includes('mainnet')) return 'mainnet';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { getUrcInfo } from '../../src/display-urc';
+import { getUrcData } from '../../src/display-urc';
 
 describe('getUrc', () => {
   describe('successful retrieval', () => {
@@ -11,7 +11,7 @@ describe('getUrc', () => {
       };
 
       // Act
-      const result = await getUrcInfo(mockOptions);
+      const result = await getUrcData(mockOptions);
       // Assert
       expect(result).toBeDefined();
       expect(result?.mint).toBe("5Parkp1rVK6VDM952mZUhsdXotLUMzn2j3gdQzxdgjvK");
