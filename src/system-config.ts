@@ -36,6 +36,7 @@ export const getSystemConfig = async (options: SystemConfigAccountOptions): Prom
       graduateFeeRate: systemConfigAccountInfo.graduateFeeRate.toNumber(),
       minGraduateFee: systemConfigAccountInfo.minGraduateFee.toNumber() / 1e9,
       raydiumCpmmCreateFee: systemConfigAccountInfo.raydiumCpmmCreateFee.toNumber() / 1e9,
+      isPause: systemConfigAccountInfo.isPause,
     };
   } catch (error) {
     throw new Error('❌ Error displaying system config information:' + (error instanceof Error ? error.message : 'Unknown error'));

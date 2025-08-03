@@ -150,6 +150,7 @@ export interface SystemConfigAccountData {
   graduateFeeRate: number;
   minGraduateFee: number;
   raydiumCpmmCreateFee: number;
+  isPause: boolean;
 }
 
 export interface SetUrcOptions {
