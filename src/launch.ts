@@ -1,5 +1,5 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
-import { initProvider, loadKeypairFromBase58, loadKeypairFromFile, parseConfigData } from './utils';
+import { initProvider, parseConfigData } from './utils';
 import { MINT_SEED, CONFIG_DATA_SEED, SYSTEM_CONFIG_SEEDS, METADATA_SEED, TOKEN_METADATA_PROGRAM_ID, TOKEN_PARAMS } from './constants';
 import { getAssociatedTokenAddress, NATIVE_MINT, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { CONFIGS, getNetworkType } from './config';
@@ -9,19 +9,19 @@ import { ConfigAccountData, LaunchTokenOptions, LaunchTokenResponse, TokenMetada
 export const launchToken = async (options: LaunchTokenOptions): Promise<LaunchTokenResponse> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error('Missing --rpc parameter');
+    throw new Error('Missing rpc parameter');
   }
 
   if (!options.tokenType) {
-    throw new Error('Missing --token-type parameter');
+    throw new Error('Missing token-type parameter');
   }
 
-  if (!options.keypairBs58 && !options.keypairFile) {
-    throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
+  if (!options.creator) {
+    throw new Error('Missing creator parameter');
   }
 
   if (!options.name || !options.symbol) {
-    throw new Error('Missing --name or --symbol parameter');
+    throw new Error('Missing name or symbol parameter');
   }
 
   const type = options.tokenType;
@@ -30,16 +30,13 @@ export const launchToken = async (options: LaunchTokenOptions): Promise<LaunchTo
 
   try {
     // Load keypair and create wallet (keypair-file takes priority)
-    const creator = options.keypairFile
-      ? loadKeypairFromFile(options.keypairFile)
-      : loadKeypairFromBase58(options.keypairBs58!);
+    const creator = options.creator;
 
     const { program, provider, programId } = await initProvider(rpc, creator);
 
     // Token parameters
     const tokenName = options.name;
     const tokenSymbol = options.symbol;
-    // ######
     const tokenUri = options.uri || `https://example.com/metadata/${tokenSymbol.toLowerCase()}.json`;
 
     const initConfigData: any = TOKEN_PARAMS[type as keyof typeof TOKEN_PARAMS];

@@ -1,5 +1,6 @@
 import { describe, it } from '@jest/globals';
 import { setUrc } from '../src/set-urc';
+import { loadKeypairFromBase58 } from '../src/utils';
 
 describe('set urc', () => {
   describe('successful set urc', () => {
@@ -7,9 +8,9 @@ describe('set urc', () => {
       // Arrange
       const setUrcOptions = {
         rpc: 'http://127.0.0.1:8899',
-        mint: '4MoNnFU7M2sRt1Lmx4dhDTUr7j8FTf8qBGJXX7aZAGC6',
-        urc: 'TRP9_URC',
-        keypairBs58: '3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW',
+        mint: 'FrN8g4QNaJoVBazsqpt9sCQTTVgLjMrqXYPdg1V7oZNv',
+        urc: 'TRP10_URC',
+        refAccount: loadKeypairFromBase58('3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW'),
       };
 
       // Act

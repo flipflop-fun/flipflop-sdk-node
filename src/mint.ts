@@ -1,25 +1,25 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { CONFIG_DATA_SEED, REFERRAL_SEED, SYSTEM_CONFIG_SEEDS, REFERRAL_CODE_SEED } from './constants';
-import { cleanTokenName, getMetadataByMint, getURCDetails, initProvider, loadKeypairFromBase58, loadKeypairFromFile, mintBy } from './utils';
+import { cleanTokenName, getMetadataByMint, getURCDetails, initProvider, mintBy } from './utils';
 import { CONFIGS, getNetworkType } from './config';
 import { MintTokenOptions, MintTokenResponse } from './types';
 
 export const mintToken = async (options: MintTokenOptions): Promise<MintTokenResponse> => {
   try {
     if (!options.rpc) {
-      throw new Error('Missing --rpc parameter');
+      throw new Error('Missing rpc parameter');
     }
 
-    if (!options.keypairBs58 && !options.keypairFile) {
-      throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
+    if (!options.minter) {
+      throw new Error('Missing minter parameter');
     }
 
     if (!options.mint) {
-      throw new Error('Missing --mint parameter');
+      throw new Error('Missing mint parameter');
     }
 
     if (!options.urc) {
-      throw new Error('Missing --urc parameter');
+      throw new Error('Missing urc parameter');
     }
 
     const rpc = new Connection(options.rpc);
@@ -28,9 +28,7 @@ export const mintToken = async (options: MintTokenOptions): Promise<MintTokenRes
     const config = CONFIGS[getNetworkType(options.rpc)];
 
     // Load keypair and create wallet (keypair-file takes priority)
-    const minter = options.keypairFile 
-      ? loadKeypairFromFile(options.keypairFile)
-      : loadKeypairFromBase58(options.keypairBs58!);
+    const minter = options.minter;
 
     const { program, provider, programId } = await initProvider(rpc, minter);
 

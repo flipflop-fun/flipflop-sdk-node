@@ -1,5 +1,6 @@
 import { describe, it } from '@jest/globals';
 import { launchToken } from '../src/launch';
+import { loadKeypairFromBase58 } from '../src/utils';
 
 describe('launch token', () => {
   describe('successful launch', () => {
@@ -7,10 +8,10 @@ describe('launch token', () => {
       // Arrange
       const launchOptions = {
         rpc: 'http://127.0.0.1:8899',
-        name: 'Trump Token9',
-        symbol: 'TRP9',
+        name: 'Trump Token10',
+        symbol: 'TRP10',
         tokenType: 'meme',
-        keypairBs58: '3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW',
+        creator: loadKeypairFromBase58('3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW'),
       };
 
       // Act

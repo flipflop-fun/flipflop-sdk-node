@@ -1,5 +1,5 @@
 import { Connection, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { cleanTokenName, getMetadataByMint, initProvider, loadKeypairFromBase58, loadKeypairFromFile } from './utils';
+import { cleanTokenName, getMetadataByMint, initProvider } from './utils';
 import { CODE_ACCOUNT_SEED, CONFIG_DATA_SEED, REFERRAL_CODE_SEED, REFERRAL_SEED, SYSTEM_CONFIG_SEEDS } from './constants';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { CONFIGS, getNetworkType } from './config';
@@ -8,19 +8,19 @@ import { SetUrcOptions, SetUrcResponse } from './types';
 export const setUrc = async (options: SetUrcOptions): Promise<SetUrcResponse> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error('Missing --rpc parameter');
+    throw new Error('Missing rpc parameter');
   }
 
   if (!options.urc) {
-    throw new Error('Missing --urc parameter');
+    throw new Error('Missing urc parameter');
   }
 
   if (!options.mint) {
-    throw new Error('Missing --mint parameter');
+    throw new Error('Missing mint parameter');
   }
 
-  if (!options.keypairBs58 && !options.keypairFile) {
-    throw new Error('Missing --keypair-bs58 or --keypair-file parameter');
+  if (!options.refAccount) {
+    throw new Error('Missing ref-account parameter');
   }
 
   const rpc = new Connection(options.rpc, 'confirmed');
@@ -29,9 +29,7 @@ export const setUrc = async (options: SetUrcOptions): Promise<SetUrcResponse> =>
 
   try {
     // Load keypair and create wallet (keypair-file takes priority)
-    const refAccount = options.keypairFile 
-      ? loadKeypairFromFile(options.keypairFile)
-      : loadKeypairFromBase58(options.keypairBs58!);
+    const refAccount = options.refAccount;
 
     const { program, provider, programId } = await initProvider(rpc, refAccount);
 

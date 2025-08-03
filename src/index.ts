@@ -5,7 +5,7 @@ export { setUrc } from './set-urc';
 export { getMintData } from './display-mint';
 export { getUrcData } from './display-urc';
 export { getSystemConfig } from './system-config';
-// export { init } from './init';
+export { initializeSystemConfigAccount } from './init';
 
 // Types
 export * from './types';

@@ -1,28 +1,22 @@
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
-import { loadKeypairFromBase58, checkAccountExists, initProvider, createLookupTable } from './utils'; // Updated import
+import { checkAccountExists, initProvider, createLookupTable } from './utils';
 import { SYSTEM_CONFIG_SEEDS } from './constants';
 import { CONFIGS, getNetworkType } from './config';
 import { InitSystemConfigOptions, InitSystemConfigResponse } from './types';
 
 // Init function
-export const init = async (options: InitSystemConfigOptions): Promise<InitSystemConfigResponse> => {
+export const initializeSystemConfigAccount = async (options: InitSystemConfigOptions): Promise<InitSystemConfigResponse> => {
   if (!options.rpc) {
-    throw new Error('Missing --rpc parameter');
+    throw new Error('Missing rpc parameter');
   }
 
-  if (!options.keypairBs58) {
-    throw new Error('Missing --keypair-bs58 parameter');
+  if (!options.systemManager) {
+    throw new Error('Missing system-manager parameter');
   }
 
   const rpcUrl = options.rpc;
   const rpc = new Connection(rpcUrl, 'confirmed');
-
-  // Use keypair from command line argument
-  if (!options.keypairBs58) {
-    throw new Error('Missing --keypair-bs58 parameter');
-  }
-  
-  const systemManager = loadKeypairFromBase58(options.keypairBs58);
+  const systemManager = options.systemManager;
 
   const { program, provider, programId } = await initProvider(rpc, systemManager);
 
@@ -33,14 +27,26 @@ export const init = async (options: InitSystemConfigOptions): Promise<InitSystem
     lookupTableAddress = new PublicKey(CONFIGS[getNetworkType(rpcUrl)].lookupTableAccount || '');
     const accountInfo = await provider.connection.getParsedAccountInfo(lookupTableAddress);
     if (!accountInfo.value) {
+      console.log('⚠️  LUT account does not exist, creating new LUT...');
       const lut = await createLookupTable(provider.connection, systemManager);
       lookupTableAddress = lut.key;
-      createdNewLUT = true;
+      console.log('\n🎉 New LUT created successfully!');
+      console.log(`📋 LUT Address: ${lookupTableAddress.toBase58()}`);
+      console.log('\n📝 Next Steps:');
+      console.log('   1. Update LOOKUP_TABLE_ACCOUNT in config.ts with this address');
+      console.log('   2. Run the init command again to complete system setup');
+      process.exit(0);
     }
   } catch (error) {
+    console.log('⚠️  Invalid LUT address in config, creating new LUT...');
     const lut = await createLookupTable(provider.connection, systemManager);
     lookupTableAddress = lut.key;
-    createdNewLUT = true;
+    console.log('\n🎉 New LUT created successfully!');
+    console.log(`📋 LUT Address: ${lookupTableAddress.toBase58()}`);
+    console.log('\n📝 Next Steps:');
+    console.log('   1. Update LOOKUP_TABLE_ACCOUNT in config.ts with this address');
+    console.log('   2. Run the init command again to complete system setup');
+    process.exit(0);
   }
 
   const [systemConfigAccount] = PublicKey.findProgramAddressSync(

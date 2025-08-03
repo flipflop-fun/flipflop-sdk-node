@@ -1,5 +1,5 @@
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { FairMintToken } from "./types/fair_mint_token";
 
@@ -44,6 +44,16 @@ export interface GetMintDataResponse {
   tokenVault: PublicKey;
   feeRate: number;
   targetEras: number;
+  supply: number;
+  currentEra: number;
+  currentEpoch: number;
+  startTimestampEpoch: number;
+  elapsedSecondsEpoch: number;
+  lastDifficultyCoefficient: number;
+  difficultyCoefficient: number;
+  mintSizeEpoch: number;
+  quantityMintedEpoch: number;
+  targetMintSizeEpoch: number;
   initialMintSize: number;
   epochesPerEra: number;
   targetSecondsPerEpoch: number;
@@ -85,8 +95,7 @@ export interface LaunchTokenOptions {
   symbol: string;
   uri?: string;
   rpc: string;
-  keypairBs58?: string;
-  keypairFile?: string;
+  creator: Keypair;
 }
 
 export interface LaunchTokenResponse {
@@ -147,8 +156,7 @@ export interface SetUrcOptions {
   rpc: string;
   urc: string;
   mint: string;
-  keypairBs58?: string;
-  keypairFile?: string;
+  refAccount: Keypair;
 }
 
 export interface SetUrcResponse {
@@ -164,8 +172,7 @@ export interface SetUrcResponse {
 
 export interface MintTokenOptions {
   rpc: string;
-  keypairBs58?: string;
-  keypairFile?: string;
+  minter: Keypair;
   mint: string;
   urc: string;
 }
@@ -181,7 +188,7 @@ export interface MintTokenResponse {
 
 export interface InitSystemConfigOptions {
   rpc: string;
-  keypairBs58: string;
+  systemManager: Keypair;
 }
 
 export interface InitSystemConfigResponse {
