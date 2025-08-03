@@ -1,5 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { getMintData } from '../src/display-mint';
+import { PublicKey } from '@solana/web3.js';
 
 describe('getMintInfo', () => {
   describe('successful retrieval', () => {
@@ -7,7 +8,7 @@ describe('getMintInfo', () => {
       // Arrange
       const mockOptions = {
         rpc: 'https://api.devnet.solana.com',
-        mint: '5Parkp1rVK6VDM952mZUhsdXotLUMzn2j3gdQzxdgjvK'
+        mint: new PublicKey('5Parkp1rVK6VDM952mZUhsdXotLUMzn2j3gdQzxdgjvK')
       };
 
       // Act

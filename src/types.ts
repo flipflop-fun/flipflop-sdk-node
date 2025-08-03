@@ -5,6 +5,7 @@ import { FairMintToken } from "./types/fair_mint_token";
 
 // Add more types from IDL as needed
 export type NetworkType = 'local' | 'devnet' | 'mainnet';
+export type TokenType = 'meme' | 'standard';
 
 export interface RemainingAccount {
   pubkey: PublicKey,
@@ -30,7 +31,7 @@ export interface ProviderAndProgram {
 
 export interface GetMintDataOptions {
   rpc: string;
-  mint: string;
+  mint: PublicKey;
 }
 
 export interface GetMintDataResponse {
@@ -90,7 +91,7 @@ export interface TokenMetadata {
 }
 
 export interface LaunchTokenOptions {
-  tokenType: string;
+  tokenType: TokenType;
   name: string;
   symbol: string;
   uri?: string;
@@ -156,7 +157,7 @@ export interface SystemConfigAccountData {
 export interface SetUrcOptions {
   rpc: string;
   urc: string;
-  mint: string;
+  mint: PublicKey;
   refAccount: Keypair;
 }
 
@@ -174,7 +175,7 @@ export interface SetUrcResponse {
 export interface MintTokenOptions {
   rpc: string;
   minter: Keypair;
-  mint: string;
+  mint: PublicKey;
   urc: string;
 }
 export interface MintTokenResponse {

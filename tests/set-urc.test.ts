@@ -1,6 +1,7 @@
 import { describe, it } from '@jest/globals';
 import { setUrc } from '../src/set-urc';
 import { loadKeypairFromBase58 } from '../src/utils';
+import { PublicKey } from '@solana/web3.js';
 
 describe('set urc', () => {
   describe('successful set urc', () => {
@@ -8,7 +9,7 @@ describe('set urc', () => {
       // Arrange
       const setUrcOptions = {
         rpc: 'http://127.0.0.1:8899',
-        mint: 'FrN8g4QNaJoVBazsqpt9sCQTTVgLjMrqXYPdg1V7oZNv',
+        mint: new PublicKey('FrN8g4QNaJoVBazsqpt9sCQTTVgLjMrqXYPdg1V7oZNv'),
         urc: 'TRP10_URC',
         refAccount: loadKeypairFromBase58('3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW'),
       };
