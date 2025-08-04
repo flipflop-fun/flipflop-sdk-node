@@ -1,6 +1,6 @@
 # @flipflop-sdk/node
 
-A comprehensive Node.js SDK for FlipFlop token operations on Solana. This library provides programmatic access to token launches, Universal Referral Code (URC) management, and batch minting operations.
+A comprehensive Node.js SDK for FlipFlop token operations on Solana. This library provides programmatic access to token launches, Universal Referral Code (URC) management, batch minting operations, and metadata management.
 
 ## Installation
 
@@ -21,16 +21,33 @@ const {
   setUrc, 
   getMintData, 
   getUrcData,
-  getSystemConfig 
+  getSystemConfig,
+  generateMetadataUri,
+  validateImageFile
 } = require('@flipflop-sdk/node');
 
 async function example() {
-  // Launch a new token
+  // Generate metadata URI first
+  const metadataResult = await generateMetadataUri({
+    rpc: 'https://api.devnet.solana.com',
+    name: 'My Token',
+    symbol: 'MTK',
+    description: 'A sample token for demonstration',
+    imagePath: './path/to/token-logo.png'
+  });
+
+  if (metadataResult.success) {
+    console.log('Metadata URI:', metadataResult.metadataUrl);
+    console.log('Image URI:', metadataResult.imageUrl);
+  }
+
+  // Launch a new token with metadata
   const launchResult = await launchToken({
     rpc: 'https://api.devnet.solana.com',
     name: 'My Token',
     symbol: 'MTK',
     tokenType: 'meme', // or 'standard'
+    uri: metadataResult.metadataUrl, // Use generated metadata URI
     keypairBs58: 'your-base58-private-key'
   });
 
@@ -90,7 +107,6 @@ async function example() {
   console.log('System manager:', systemConfig.systemManagerAccount.toString());
   console.log('Protocol fee rate:', systemConfig.graduateFeeRate);
 }
-```
 
 ### TypeScript Usage
 
@@ -102,6 +118,8 @@ import {
   getMintData, 
   getUrcData,
   getSystemConfig,
+  generateMetadataUri,
+  validateImageFile,
   LaunchTokenOptions,
   LaunchTokenResponse,
   MintTokenOptions,
@@ -113,16 +131,30 @@ import {
   GetUrcDataOptions,
   GetUrcDataResponse,
   SystemConfigAccountOptions,
-  SystemConfigAccountData
+  SystemConfigAccountData,
+  GenerateMetadataUriOptions,
+  MetadataUploadResponse
 } from '@flipflop-sdk/node';
 
 async function example() {
+  // Generate metadata with type safety
+  const metadataOptions: GenerateMetadataUriOptions = {
+    rpc: 'https://api.devnet.solana.com',
+    name: 'TypeScript Token',
+    symbol: 'TST',
+    description: 'A TypeScript token example',
+    imagePath: './assets/logo.png'
+  };
+
+  const metadataResult: MetadataUploadResponse = await generateMetadataUri(metadataOptions);
+  
   // Launch token with type safety
   const launchOptions: LaunchTokenOptions = {
     rpc: 'https://api.devnet.solana.com',
     name: 'TypeScript Token',
     symbol: 'TST',
     tokenType: 'standard',
+    uri: metadataResult.metadataUrl,
     keypairBs58: 'your-base58-private-key'
   };
 
@@ -154,6 +186,73 @@ async function example() {
 
 ### Core Functions
 
+#### `generateMetadataUri(options: GenerateMetadataUriOptions): Promise<MetadataUploadResponse>`
+
+**NEW** - Generate metadata URI by uploading image and metadata to Irys network.
+
+**Parameters:**
+```typescript
+interface GenerateMetadataUriOptions {
+  rpc: string;           // RPC endpoint URL
+  name: string;          // Token name
+  symbol: string;        // Token symbol
+  description?: string;  // Token description (optional)
+  imagePath: string;     // Path to image file
+}
+```
+
+**Returns:**
+```typescript
+interface MetadataUploadResponse {
+  success: boolean;
+  metadataUrl?: string;  // Irys gateway URL for metadata JSON
+  imageUrl?: string;     // Irys gateway URL for uploaded image
+  error?: string;        // Error message if upload failed
+}
+```
+
+**Image Requirements:**
+- **Supported formats**: JPEG, PNG, GIF, WebP, AVIF
+- **Maximum size**: 250KB
+- **File validation**: Automatic type and size checking
+
+**Example:**
+```javascript
+const result = await generateMetadataUri({
+  rpc: 'https://api.devnet.solana.com',
+  name: 'My Awesome Token',
+  symbol: 'MAT',
+  description: 'This is an awesome token for the community',
+  imagePath: './assets/token-logo.png'
+});
+
+if (result.success) {
+  console.log('Metadata URL:', result.metadataUrl);
+  console.log('Image URL:', result.imageUrl);
+} else {
+  console.error('Upload failed:', result.error);
+}
+```
+
+#### `validateImageFile(imagePath: string): { valid: boolean; error?: string }`
+
+**NEW** - Validate image file before upload.
+
+**Parameters:**
+- `imagePath`: Path to the image file
+
+**Returns:**
+- `valid`: Boolean indicating if file is valid
+- `error`: Error message if validation fails
+
+**Example:**
+```javascript
+const validation = validateImageFile('./logo.png');
+if (!validation.valid) {
+  console.error('Image validation failed:', validation.error);
+}
+```
+
 #### `launchToken(options: LaunchTokenOptions): Promise<LaunchTokenResponse>`
 
 Launch a new token with specified parameters.
@@ -165,7 +264,7 @@ interface LaunchTokenOptions {
   name: string;            // Token name
   symbol: string;          // Token symbol
   tokenType: string;       // 'meme' or 'standard'
-  uri?: string;            // Metadata URI (optional)
+  uri?: string;            // Metadata URI (optional, use generateMetadataUri)
   keypairBs58?: string;    // Base58 encoded private key
   keypairFile?: string;    // Path to keypair file
 }
@@ -190,6 +289,7 @@ const result = await launchToken({
   name: 'My Token',
   symbol: 'MTK',
   tokenType: 'meme',
+  uri: 'https://gateway.irys.xyz/your-metadata-id', // From generateMetadataUri
   keypairBs58: 'your-base58-private-key'
 });
 ```
@@ -398,6 +498,7 @@ import {
   initProviderNoSigner, 
   loadKeypairFromBase58, 
   loadKeypairFromFile,
+  validateImageFile,
   CONFIGS,
   NetworkType 
 } from '@flipflop-sdk/node';
@@ -418,6 +519,11 @@ import {
 - **Mainnet**: `https://api.mainnet-beta.solana.com`
 - **Devnet**: `https://api.devnet.solana.com`
 - **Local**: `http://127.0.0.1:8899`
+
+### Irys Network Integration
+- **Devnet**: `https://api-dev.flipflop.plus/api/irys/upload`
+- **Mainnet**: `https://api.flipflop.plus/api/irys/upload`
+- **Gateway**: `https://gateway.irys.xyz/`
 
 ## Authentication
 
@@ -445,19 +551,58 @@ All functions throw descriptive errors for validation and runtime issues:
 
 ```javascript
 try {
+  // Validate image first
+  const validation = validateImageFile('./logo.png');
+  if (!validation.valid) {
+    throw new Error(`Image validation failed: ${validation.error}`);
+  }
+
+  // Generate metadata
+  const metadataResult = await generateMetadataUri({
+    rpc: 'https://api.devnet.solana.com',
+    name: 'My Token',
+    symbol: 'MTK',
+    description: 'My awesome token',
+    imagePath: './logo.png'
+  });
+
+  if (!metadataResult.success) {
+    throw new Error(`Metadata upload failed: ${metadataResult.error}`);
+  }
+
+  // Launch token
   const result = await launchToken({
     rpc: 'https://api.devnet.solana.com',
     name: 'My Token',
     symbol: 'MTK',
     tokenType: 'meme',
+    uri: metadataResult.metadataUrl,
     keypairBs58: 'invalid-key'
   });
 } catch (error) {
-  console.error('Launch failed:', error.message);
+  console.error('Operation failed:', error.message);
 }
 ```
 
 ## Development
+
+### Dependencies
+
+The SDK uses the following key dependencies:
+
+**Core Solana Libraries:**
+- `@coral-xyz/anchor` (0.31.1) - Anchor framework for Solana
+- `@solana/web3.js` (^1.98.0) - Solana Web3 JavaScript API
+- `@solana/spl-token` (^0.4.9) - SPL Token library
+- `@solana/spl-token-metadata` (^0.1.6) - Token metadata standard
+
+**Utility Libraries:**
+- `axios` (^1.11.0) - HTTP client for API requests
+- `form-data` (^4.0.4) - Multipart form data for file uploads
+- `bn.js` (5.2.1) - Big number arithmetic
+- `bs58` (^6.0.0) - Base58 encoding/decoding
+- `decimal.js` (^10.4.3) - Decimal arithmetic
+- `sleep-promise` (^9.1.0) - Promise-based sleep utility
 
 ### Building
 
@@ -486,32 +631,62 @@ npm test launch.test.ts
 
 # Run tests with coverage
 npm run test:coverage
+
+# Run metadata tests (requires network connection)
+npm test metadata.test.ts
 ```
+
+**Note**: Metadata tests make real API calls to devnet and require internet connection.
 
 ## Examples
 
-### Complete Token Launch Flow
+### Complete Token Launch Flow with Metadata
 
 ```javascript
-const { launchToken, setUrc, mintToken } = require('@flipflop-sdk/node');
+const { 
+  generateMetadataUri, 
+  launchToken, 
+  setUrc, 
+  mintToken 
+} = require('@flipflop-sdk/node');
 
-async function completeFlow() {
+async function completeFlowWithMetadata() {
   const rpc = 'https://api.devnet.solana.com';
   const creatorKey = 'creator-base58-private-key';
   const minterKey = 'minter-base58-private-key';
   
-  // 1. Launch token
+  // 1. Generate metadata URI
+  console.log('Step 1: Generating metadata...');
+  const metadata = await generateMetadataUri({
+    rpc,
+    name: 'Demo Token',
+    symbol: 'DEMO',
+    description: 'A demonstration token with custom metadata',
+    imagePath: './assets/demo-logo.png'
+  });
+  
+  if (!metadata.success) {
+    throw new Error(`Metadata generation failed: ${metadata.error}`);
+  }
+  
+  console.log('Metadata URL:', metadata.metadataUrl);
+  console.log('Image URL:', metadata.imageUrl);
+  
+  // 2. Launch token with metadata
+  console.log('Step 2: Launching token...');
   const launch = await launchToken({
     rpc,
     name: 'Demo Token',
     symbol: 'DEMO',
     tokenType: 'standard',
+    uri: metadata.metadataUrl,
     keypairBs58: creatorKey
   });
   
   console.log('Token launched:', launch.mintAddress.toString());
   
-  // 2. Set URC
+  // 3. Set URC
+  console.log('Step 3: Setting URC...');
   const urc = await setUrc({
     rpc,
     mint: launch.mintAddress.toString(),
@@ -521,7 +696,8 @@ async function completeFlow() {
   
   console.log('URC set:', urc.urc);
   
-  // 3. Mint tokens
+  // 4. Mint tokens
+  console.log('Step 4: Minting tokens...');
   const mint = await mintToken({
     rpc,
     mint: launch.mintAddress.toString(),
@@ -530,28 +706,57 @@ async function completeFlow() {
   });
   
   console.log('Mint successful:', mint.success);
+  
+  return {
+    metadata: metadata.metadataUrl,
+    mint: launch.mintAddress.toString(),
+    urc: urc.urc,
+    transaction: mint.data?.tx
+  };
 }
 ```
 
-### Batch Operations
+### Batch Operations with Metadata Validation
 
 ```javascript
-async function batchMint() {
-  const mintPromises = [];
+async function batchMintWithValidation() {
+  const imagePaths = [
+    './assets/logo1.png',
+    './assets/logo2.jpg',
+    './assets/logo3.gif'
+  ];
   
-  for (let i = 0; i < 5; i++) {
-    mintPromises.push(
-      mintToken({
-        rpc: 'https://api.devnet.solana.com',
-        mint: 'TokenMintAddress',
-        urc: 'BATCH_CODE',
-        keypairBs58: `minter-${i}-private-key`
-      })
-    );
+  // Validate all images first
+  const validations = imagePaths.map(path => ({
+    path,
+    validation: validateImageFile(path)
+  }));
+  
+  const validImages = validations.filter(v => v.validation.valid);
+  const invalidImages = validations.filter(v => !v.validation.valid);
+  
+  if (invalidImages.length > 0) {
+    console.warn('Invalid images found:');
+    invalidImages.forEach(img => {
+      console.warn(`- ${img.path}: ${img.validation.error}`);
+    });
   }
   
-  const results = await Promise.all(mintPromises);
-  console.log('Batch mint results:', results);
+  // Process valid images
+  const metadataPromises = validImages.map((img, index) => 
+    generateMetadataUri({
+      rpc: 'https://api.devnet.solana.com',
+      name: `Batch Token ${index + 1}`,
+      symbol: `BT${index + 1}`,
+      description: `Batch generated token ${index + 1}`,
+      imagePath: img.path
+    })
+  );
+  
+  const metadataResults = await Promise.all(metadataPromises);
+  console.log('Batch metadata generation results:', metadataResults);
+  
+  return metadataResults;
 }
 ```
 
@@ -566,6 +771,8 @@ async function batchMint() {
 | `flipflop mint` | `mintToken()` |
 | `flipflop display-mint` | `getMintData()` |
 | `flipflop display-urc` | `getUrcData()` |
+| **NEW** | `generateMetadataUri()` |
+| **NEW** | `validateImageFile()` |
 
 ### Migration Example
 
@@ -576,12 +783,23 @@ flipflop launch --name "MyToken" --symbol "MTK" --keypair-file ./keypair.json --
 
 **SDK usage:**
 ```javascript
-const { launchToken } = require('@flipflop-sdk/node');
+const { generateMetadataUri, launchToken } = require('@flipflop-sdk/node');
 
+// Generate metadata first (new capability)
+const metadata = await generateMetadataUri({
+  rpc: 'https://api.devnet.solana.com',
+  name: 'MyToken',
+  symbol: 'MTK',
+  description: 'My awesome token',
+  imagePath: './logo.png'
+});
+
+// Launch with metadata
 const result = await launchToken({
   name: 'MyToken',
   symbol: 'MTK',
   tokenType: 'standard',
+  uri: metadata.metadataUrl,
   rpc: 'https://api.devnet.solana.com',
   keypairFile: './keypair.json'
 });
@@ -592,8 +810,11 @@ const result = await launchToken({
 - Never commit private keys to version control
 - Use environment variables for sensitive configuration
 - Validate all inputs before SDK operations
+- **Image Security**: Only upload trusted images, validate file types and sizes
+- **Metadata Security**: Review generated metadata before using in production
 - Consider using `Keypair.fromSeed()` for deterministic key generation
 - Always verify transaction results before proceeding
+- **Network Security**: Use HTTPS endpoints for all API calls
 
 ## TypeScript Support
 
@@ -613,6 +834,9 @@ import {
   GetUrcDataResponse,
   SystemConfigAccountOptions,
   SystemConfigAccountData,
+  GenerateMetadataUriOptions,
+  MetadataUploadResponse,
+  MetadataParams,
   TokenMetadata,
   ConfigAccountData,
   NetworkType
@@ -624,8 +848,9 @@ import {
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+4. Ensure all tests pass (including metadata tests)
+5. Update documentation for new features
+6. Submit a pull request
 
 ## License
 

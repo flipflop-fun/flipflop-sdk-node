@@ -13,24 +13,11 @@ import path from 'path';
 import axios from 'axios';
 import FormData from 'form-data';
 import { CONFIGS, getNetworkType } from './config';
-import { NetworkConfig } from './types';
+import { GenerateMetadataUriOptions, MetadataParams, MetadataUploadResponse, NetworkConfig } from './types';
 
 // Constants based on frontend configuration
 const VALID_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
 const MAX_AVATAR_FILE_SIZE = 0.25 * 1024 * 1024; // 250KB
-
-interface MetadataParams {
-  name: string;
-  symbol: string;
-  description: string;
-}
-
-interface MetadataUploadResult {
-  success: boolean;
-  metadataUrl?: string;
-  imageUrl?: string;
-  error?: string;
-}
 
 /**
  * Validates image file type and size based on frontend validation logic
@@ -154,7 +141,7 @@ const createAndUploadMetadata = async (config: NetworkConfig, params: MetadataPa
   const metadata = {
     name: params.name,
     symbol: params.symbol,
-    description: params.description,
+    description: params.description === undefined ? '' : params.description,
     image: imageUrl,
     extensions: {
       website: '',
@@ -199,18 +186,11 @@ const createAndUploadMetadata = async (config: NetworkConfig, params: MetadataPa
  * @param imagePath Path to the image file
  * @returns Promise resolving to metadata upload result
  */
-interface GenerateMetadataUriOptions {
-  rpc: string;
-  name: string;
-  symbol: string;
-  description: string;
-  imagePath: string;
-}
-const generateMetadataUri = async (options: GenerateMetadataUriOptions): Promise<MetadataUploadResult> => {
+const generateMetadataUri = async (options: GenerateMetadataUriOptions): Promise<MetadataUploadResponse> => {
   try {
     const config = CONFIGS[getNetworkType(options.rpc)]
     // Step 1: Validate image file
-    console.log('Step 1: Validating image file...');
+    // console.log('Step 1: Validating image file...');
     const validation = validateImageFile(options.imagePath);
     if (!validation.valid) {
       return {
@@ -220,18 +200,18 @@ const generateMetadataUri = async (options: GenerateMetadataUriOptions): Promise
     }
 
     // Step 2: Upload image to Irys
-    console.log('Step 2: Uploading image to Irys network...');
+    // console.log('Step 2: Uploading image to Irys network...');
     const imageUrl = await uploadToStorage(config, options.imagePath, 'avatar');
-    console.log(`Image uploaded successfully: ${imageUrl}`);
+    // console.log(`Image uploaded successfully: ${imageUrl}`);
 
     // Step 3: Create and upload metadata
-    console.log('Step 3: Creating and uploading metadata...');
+    // console.log('Step 3: Creating and uploading metadata...');
     const metadataUrl = await createAndUploadMetadata(
       config,
       { name: options.name, symbol: options.symbol, description: options.description },
       imageUrl
     );
-    console.log(`Metadata uploaded successfully: ${metadataUrl}`);
+    // console.log(`Metadata uploaded successfully: ${metadataUrl}`);
 
     return {
       success: true,

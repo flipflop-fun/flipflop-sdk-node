@@ -211,3 +211,33 @@ export interface NetworkConfig {
   irysGatewayUrl: string;
   apiBaseUrl: string;
 }
+
+export interface GenerateMetadataUriOptions {
+  rpc: string;
+  name: string;
+  symbol: string;
+  description?: string;
+  imagePath: string;
+}
+
+export interface MetadataUploadResponse {
+  success: boolean;
+  metadataUrl?: string;
+  imageUrl?: string;
+  error?: string;
+}
+
+export interface MetadataParams {
+  name: string;
+  symbol: string;
+  description?: string;
+  image?: string;
+  extensions?: {
+    website?: string;
+    twitter?: string;
+    discord?: string;
+    telegram?: string;
+    github?: string;
+    medium?: string;
+  }
+}

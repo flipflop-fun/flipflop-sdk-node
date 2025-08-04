@@ -1,6 +1,6 @@
 {
   "name": "@flipflop-sdk/node",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "FlipFlop Node.js SDK for programmatic token operations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
