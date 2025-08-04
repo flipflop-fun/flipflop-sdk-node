@@ -6,6 +6,7 @@ export { getMintData } from './display-mint';
 export { getUrcData } from './display-urc';
 export { getSystemConfig } from './system-config';
 export { initializeSystemConfigAccount } from './init';
+export { generateMetadataUri, validateImageFile } from './metadata';
 
 // Types
 export * from './types';

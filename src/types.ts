@@ -200,3 +200,14 @@ export interface InitSystemConfigResponse {
   systemManager: PublicKey;
   createdNewLUT: boolean;
 }
+
+export interface NetworkConfig {
+  programId: string;
+  lookupTableAccount: string;
+  systemManagerAccount: string;
+  cpSwapProgram: string;
+  cpSwapConfigAddress: string;
+  createPoolFeeReceive: string;
+  irysGatewayUrl: string;
+  apiBaseUrl: string;
+}
