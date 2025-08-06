@@ -76,7 +76,7 @@ export const mintToken = async (options: MintTokenOptions): Promise<MintTokenRes
       minter, // minter
       systemConfigAccount,
       provider.connection,
-      new PublicKey(config.lookupTableAccount),
+      options.lookupTableAccount ? options.lookupTableAccount : new PublicKey(config.lookupTableAccount),
       protocolFeeAccount
     );
     // Ensure tx is always a string in the response

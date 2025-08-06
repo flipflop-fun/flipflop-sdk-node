@@ -177,6 +177,7 @@ export interface MintTokenOptions {
   minter: Keypair;
   mint: PublicKey;
   urc: string;
+  lookupTableAccount?: PublicKey;
 }
 export interface MintTokenResponse {
   success: boolean;

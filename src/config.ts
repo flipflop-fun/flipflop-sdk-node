@@ -10,7 +10,7 @@ export const getNetworkType = (rpcUrl: string): 'local' | 'devnet' | 'mainnet' =
 export const CONFIGS = {
   local: {
     programId: 'FLipzZfErPUtDQPj9YrC6wp4nRRiVxRkFm3jdFmiPHJV',
-    lookupTableAccount: 'CkbTb7DXxR2Q1zoqZeTDWjfAzZKSzixHZdaVsbmFemSV',
+    lookupTableAccount: '6MzoPgNhKXsEx91X6aPyNXdsMMjrZBPLJ9s74Lxezs7A',
     systemManagerAccount: 'DJ3jvpv6k7uhq8h9oVHZck6oY4dQqY1GHaLvCLjSqxaD',
     cpSwapProgram: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
     cpSwapConfigAddress: 'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
