@@ -329,6 +329,83 @@
       ]
     },
     {
+      "name": "initialize_launch_rule",
+      "docs": [
+        "Initialize launch rule"
+      ],
+      "discriminator": [
+        61,
+        250,
+        188,
+        110,
+        91,
+        75,
+        249,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "launch_rule_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  114,
+                  117,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "admin"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "start_slot",
+          "type": "u64"
+        },
+        {
+          "name": "slots_per_period",
+          "type": "u64"
+        },
+        {
+          "name": "base_launch_limit",
+          "type": "u64"
+        },
+        {
+          "name": "increasement_launch_limit",
+          "type": "u64"
+        },
+        {
+          "name": "max_period",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initialize_system",
       "docs": [
         "Initialize system"
@@ -502,6 +579,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "launch_rule_account",
+          "writable": true
         },
         {
           "name": "mint_token_vault",
@@ -932,173 +1013,9 @@
       ]
     },
     {
-      "name": "proxy_create_pool",
-      "docs": [
-        "Initiazlize a swap pool"
-      ],
-      "discriminator": [
-        250,
-        151,
-        238,
-        168,
-        5,
-        240,
-        236,
-        243
-      ],
-      "accounts": [
-        {
-          "name": "creator",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "creator_token_vault",
-          "writable": true
-        },
-        {
-          "name": "creator_wsol_vault",
-          "writable": true
-        },
-        {
-          "name": "mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  97,
-                  105,
-                  114,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "token_name"
-              },
-              {
-                "kind": "arg",
-                "path": "token_symbol"
-              }
-            ]
-          }
-        },
-        {
-          "name": "config_account",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                  95,
-                  100,
-                  97,
-                  116,
-                  97
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_config_account"
-        },
-        {
-          "name": "token_vault",
-          "writable": true
-        },
-        {
-          "name": "wsol_vault",
-          "writable": true
-        },
-        {
-          "name": "wsol_mint"
-        },
-        {
-          "name": "pool_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "amm_config"
-              },
-              {
-                "kind": "account",
-                "path": "token_0_mint"
-              },
-              {
-                "kind": "account",
-                "path": "token_1_mint"
-              }
-            ],
-            "program": {
-              "kind": "account",
-              "path": "cp_swap_program"
-            }
-          }
-        },
-        {
-          "name": "amm_config"
-        },
-        {
-          "name": "cp_swap_program",
-          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
-        },
-        {
-          "name": "token_0_mint"
-        },
-        {
-          "name": "token_1_mint"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "token_name",
-          "type": "string"
-        },
-        {
-          "name": "token_symbol",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "proxy_deposit",
       "docs": [
+        "Initiazlize a swap pool (Deprated)",
         "deposit instruction"
       ],
       "discriminator": [
@@ -2839,6 +2756,19 @@
       ]
     },
     {
+      "name": "LaunchRuleData",
+      "discriminator": [
+        219,
+        140,
+        239,
+        85,
+        135,
+        107,
+        8,
+        102
+      ]
+    },
+    {
       "name": "ObservationState",
       "discriminator": [
         122,
@@ -3442,6 +3372,16 @@
       "code": 6088,
       "name": "LaunchTokenPaused",
       "msg": "Launch token paused"
+    },
+    {
+      "code": 6089,
+      "name": "LaunchRuleAlreadyInitialized",
+      "msg": "Launch rule already initialized"
+    },
+    {
+      "code": 6090,
+      "name": "LaunchRuleLimited",
+      "msg": "Launch rule limited"
     }
   ],
   "types": [
@@ -3671,6 +3611,46 @@
           {
             "name": "wsol_vault",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchRuleData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "start_slot",
+            "type": "u64"
+          },
+          {
+            "name": "slots_per_period",
+            "type": "u64"
+          },
+          {
+            "name": "base_launch_limit",
+            "type": "u64"
+          },
+          {
+            "name": "increasement_launch_limit",
+            "type": "u64"
+          },
+          {
+            "name": "max_period",
+            "type": "u64"
+          },
+          {
+            "name": "last_period",
+            "type": "u64"
+          },
+          {
+            "name": "current_launches_in_period",
+            "type": "u64"
           }
         ]
       }

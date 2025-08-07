@@ -1,6 +1,6 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { initProvider, parseConfigData } from './utils';
-import { MINT_SEED, CONFIG_DATA_SEED, SYSTEM_CONFIG_SEEDS, METADATA_SEED, TOKEN_METADATA_PROGRAM_ID, TOKEN_PARAMS } from './constants';
+import { MINT_SEED, CONFIG_DATA_SEED, SYSTEM_CONFIG_SEEDS, METADATA_SEED, TOKEN_METADATA_PROGRAM_ID, TOKEN_PARAMS, LAUNCH_RULE_SEEDS } from './constants';
 import { getAssociatedTokenAddress, NATIVE_MINT, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { CONFIGS, getNetworkType } from './config';
 import { ConfigAccountData, LaunchTokenOptions, LaunchTokenResponse, TokenMetadata } from './types';
@@ -48,6 +48,11 @@ export const launchToken = async (options: LaunchTokenOptions): Promise<LaunchTo
       uri: tokenUri,
       decimals: 9,
     };
+
+    const [launchRuleAccountPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(LAUNCH_RULE_SEEDS), new PublicKey(config.systemManagerAccount).toBuffer()],
+      program.programId,
+    );
 
     const [systemConfigAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from(SYSTEM_CONFIG_SEEDS), new PublicKey(config.systemManagerAccount).toBuffer()],
@@ -114,6 +119,7 @@ export const launchToken = async (options: LaunchTokenOptions): Promise<LaunchTo
       systemConfigAccount: systemConfigAccount,
       protocolFeeAccount: protocolFeeAccount,
       tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+      launchRuleAccount: launchRuleAccountPda,
     };
 
     const instructionInitializeToken = await program.methods
