@@ -131,7 +131,7 @@ export const parseConfigData = async (program: Program<FairMintToken> , configAc
         resolve({
           admin: configData.admin,
           // feeVault: configData.feeVault.toBase58(),
-          feeRate: new BN(configData.feeRate).div(new BN("1000000000")).toNumber(),
+          feeRate: configData.feeRate.toNumber() / 1000000000,
           maxSupply: new BN(configData.maxSupply).div(new BN("1000000000")).toNumber(),
           targetEras: configData.targetEras,
           initialMintSize: new BN(configData.initialMintSize).div(new BN("1000000000")).toNumber(),
@@ -139,6 +139,7 @@ export const parseConfigData = async (program: Program<FairMintToken> , configAc
           targetSecondsPerEpoch: new BN(configData.targetSecondsPerEpoch).toNumber(),
           reduceRatio: configData.reduceRatio,
           tokenVault: configData.tokenVault,
+          wsolVault: configData.wsolVault,
           liquidityTokensRatio: configData.liquidityTokensRatio,
           supply: new BN(configData.mintStateData.supply).div(new BN("1000000000")).toNumber(),
           currentEra: configData.mintStateData.currentEra,

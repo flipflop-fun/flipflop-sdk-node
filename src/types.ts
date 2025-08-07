@@ -43,6 +43,9 @@ export interface GetMintDataResponse {
   configAccount: PublicKey;
   admin: PublicKey;
   tokenVault: PublicKey;
+  wsolVault: PublicKey;
+  tokenVaultBalance: number;
+  wsolVaultBalance: number;
   feeRate: number;
   targetEras: number;
   supply: number;
@@ -118,6 +121,7 @@ export interface ConfigAccountData {
   targetSecondsPerEpoch: number;
   reduceRatio: number;
   tokenVault: PublicKey;
+  wsolVault: PublicKey;
   liquidityTokensRatio: number;
   supply: number;
   currentEra: number;

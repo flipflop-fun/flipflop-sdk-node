@@ -1,5 +1,5 @@
 import { Connection, PublicKey } from '@solana/web3.js';
-import { getMetadataByMint, initProviderNoSigner, parseConfigData } from './utils';
+import { getMetadataByMint, getTokenBalance, initProviderNoSigner, parseConfigData } from './utils';
 import { CONFIG_DATA_SEED } from './constants';
 import { GetMintDataOptions, GetMintDataResponse } from './types';
 
@@ -53,6 +53,9 @@ export const getMintData = async (options: GetMintDataOptions): Promise<GetMintD
       configAccount: configAccount,
       admin: configAccountInfo.admin,
       tokenVault: configAccountInfo.tokenVault,
+      wsolVault: configAccountInfo.wsolVault,
+      tokenVaultBalance: await getTokenBalance(configAccountInfo.tokenVault, program.provider.connection),
+      wsolVaultBalance: await getTokenBalance(configAccountInfo.wsolVault, program.provider.connection),
       feeRate: configAccountInfo.feeRate * 1,
       targetEras: configAccountInfo.targetEras,
       supply: configAccountInfo.supply,
