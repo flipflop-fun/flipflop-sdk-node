@@ -335,6 +335,83 @@ export type FairMintToken = {
       ]
     },
     {
+      "name": "initializeLaunchRule",
+      "docs": [
+        "Initialize launch rule"
+      ],
+      "discriminator": [
+        61,
+        250,
+        188,
+        110,
+        91,
+        75,
+        249,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "launchRuleData",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  117,
+                  110,
+                  99,
+                  104,
+                  95,
+                  114,
+                  117,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "admin"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "startSlot",
+          "type": "u64"
+        },
+        {
+          "name": "slotsPerPeriod",
+          "type": "u64"
+        },
+        {
+          "name": "baseLaunchLimit",
+          "type": "u64"
+        },
+        {
+          "name": "increasementLaunchLimit",
+          "type": "u64"
+        },
+        {
+          "name": "maxPeriod",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initializeSystem",
       "docs": [
         "Initialize system"
@@ -508,6 +585,10 @@ export type FairMintToken = {
               }
             ]
           }
+        },
+        {
+          "name": "launchRuleAccount",
+          "writable": true
         },
         {
           "name": "mintTokenVault",
@@ -938,173 +1019,9 @@ export type FairMintToken = {
       ]
     },
     {
-      "name": "proxyCreatePool",
-      "docs": [
-        "Initiazlize a swap pool"
-      ],
-      "discriminator": [
-        250,
-        151,
-        238,
-        168,
-        5,
-        240,
-        236,
-        243
-      ],
-      "accounts": [
-        {
-          "name": "creator",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "creatorTokenVault",
-          "writable": true
-        },
-        {
-          "name": "creatorWsolVault",
-          "writable": true
-        },
-        {
-          "name": "mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  97,
-                  105,
-                  114,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "tokenName"
-              },
-              {
-                "kind": "arg",
-                "path": "tokenSymbol"
-              }
-            ]
-          }
-        },
-        {
-          "name": "configAccount",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103,
-                  95,
-                  100,
-                  97,
-                  116,
-                  97
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "systemConfigAccount"
-        },
-        {
-          "name": "tokenVault",
-          "writable": true
-        },
-        {
-          "name": "wsolVault",
-          "writable": true
-        },
-        {
-          "name": "wsolMint"
-        },
-        {
-          "name": "poolState",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "ammConfig"
-              },
-              {
-                "kind": "account",
-                "path": "token0Mint"
-              },
-              {
-                "kind": "account",
-                "path": "token1Mint"
-              }
-            ],
-            "program": {
-              "kind": "account",
-              "path": "cpSwapProgram"
-            }
-          }
-        },
-        {
-          "name": "ammConfig"
-        },
-        {
-          "name": "cpSwapProgram",
-          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
-        },
-        {
-          "name": "token0Mint"
-        },
-        {
-          "name": "token1Mint"
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "tokenName",
-          "type": "string"
-        },
-        {
-          "name": "tokenSymbol",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "proxyDeposit",
       "docs": [
+        "Initiazlize a swap pool (Deprated)",
         "deposit instruction"
       ],
       "discriminator": [
@@ -2845,6 +2762,19 @@ export type FairMintToken = {
       ]
     },
     {
+      "name": "launchRuleData",
+      "discriminator": [
+        219,
+        140,
+        239,
+        85,
+        135,
+        107,
+        8,
+        102
+      ]
+    },
+    {
       "name": "observationState",
       "discriminator": [
         122,
@@ -3448,6 +3378,16 @@ export type FairMintToken = {
       "code": 6088,
       "name": "launchTokenPaused",
       "msg": "Launch token paused"
+    },
+    {
+      "code": 6089,
+      "name": "launchRuleAlreadyInitialized",
+      "msg": "Launch rule already initialized"
+    },
+    {
+      "code": 6090,
+      "name": "launchRuleLimited",
+      "msg": "Launch rule limited"
     }
   ],
   "types": [
@@ -3677,6 +3617,46 @@ export type FairMintToken = {
           {
             "name": "wsolVault",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "launchRuleData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "startSlot",
+            "type": "u64"
+          },
+          {
+            "name": "slotsPerPeriod",
+            "type": "u64"
+          },
+          {
+            "name": "baseLaunchLimit",
+            "type": "u64"
+          },
+          {
+            "name": "increasementLaunchLimit",
+            "type": "u64"
+          },
+          {
+            "name": "maxPeriod",
+            "type": "u64"
+          },
+          {
+            "name": "lastPeriod",
+            "type": "u64"
+          },
+          {
+            "name": "currentLaunchesInPeriod",
+            "type": "u64"
           }
         ]
       }

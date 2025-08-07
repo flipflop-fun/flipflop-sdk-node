@@ -1,6 +1,6 @@
 {
   "name": "@flipflop-sdk/node",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "FlipFlop Node.js SDK for programmatic token operations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc && cp -r src/idl dist/idl/",
+    "build": "rm -rf dist && tsc && cp -r src/idl dist/idl/",
     "dev": "tsc --watch",
     "lint": "prettier \"src/**/*{.js,.ts}\" --check",
     "lint:fix": "prettier \"src/**/*{.js,.ts}\" -w",
