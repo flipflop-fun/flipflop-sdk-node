@@ -9,8 +9,8 @@ describe('launch token', () => {
       // Arrange
       const launchOptions = {
         rpc: 'http://127.0.0.1:8899',
-        name: 'Trump Token11',
-        symbol: 'TRP11',
+        name: 'Trump Token12',
+        symbol: 'TRP12',
         tokenType: 'meme' as TokenType,
         creator: loadKeypairFromBase58('3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW'),
       };
