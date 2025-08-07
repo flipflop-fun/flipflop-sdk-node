@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { initProviderNoSigner } from './utils';
-import { SYSTEM_CONFIG_SEEDS } from './constants';
+import { LAUNCH_RULE_SEEDS, SYSTEM_CONFIG_SEEDS } from './constants';
 import { CONFIGS, getNetworkType } from './config';
 import { SystemConfigAccountData, SystemConfigAccountOptions } from './types';
 
@@ -15,6 +15,11 @@ export const getSystemConfig = async (options: SystemConfigAccountOptions): Prom
   const { program, programId } = await initProviderNoSigner(rpc);
 
   try {
+    const [launchRuleAccountPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(LAUNCH_RULE_SEEDS), new PublicKey(config.systemManagerAccount).toBuffer()],
+      programId,
+    );
+
     const [systemConfigAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from(SYSTEM_CONFIG_SEEDS), new PublicKey(config.systemManagerAccount).toBuffer()],
       programId
@@ -29,6 +34,7 @@ export const getSystemConfig = async (options: SystemConfigAccountOptions): Prom
       ...systemConfigAccountInfo,
       count: systemConfigAccountInfo.count.toNumber(),
       refundFeeRate: systemConfigAccountInfo.refundFeeRate,
+      launchRuleAccount: launchRuleAccountPda,
       referrerResetIntervalSeconds: systemConfigAccountInfo.referrerResetIntervalSeconds.toNumber(),
       updateMetadataFee: systemConfigAccountInfo.updateMetadataFee.toNumber() / 1e9,
       customizedDeployFee: systemConfigAccountInfo.customizedDeployFee.toNumber() / 1e9,

@@ -51,7 +51,7 @@ export const launchToken = async (options: LaunchTokenOptions): Promise<LaunchTo
 
     const [launchRuleAccountPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(LAUNCH_RULE_SEEDS), new PublicKey(config.systemManagerAccount).toBuffer()],
-      program.programId,
+      programId,
     );
 
     const [systemConfigAccount] = PublicKey.findProgramAddressSync(

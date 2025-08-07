@@ -152,6 +152,7 @@ export interface SystemConfigAccountData {
   minGraduateFee: number;
   raydiumCpmmCreateFee: number;
   isPause: boolean;
+  launchRuleAccount: PublicKey;
 }
 
 export interface SetUrcOptions {
