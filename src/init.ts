@@ -104,8 +104,8 @@ export const initializeSystemConfigAccount = async (options: InitSystemConfigOpt
   const tx = await program.methods
     .initializeLaunchRule(
       // ###### Update the start_slot and slots_per_period for different network
-      new BN("14150"), // start_slot
-      new BN("24000"), // slots_per_period
+      new BN("0"), // start_slot
+      new BN("10"), // slots_per_period
       new BN("3"), // base_launch_limit
       new BN("4"), // increasement_launch_limit
       new BN("12"), // max_period
