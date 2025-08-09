@@ -1,8 +1,9 @@
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { checkAccountExists, initProvider, createLookupTable } from './utils';
-import { SYSTEM_CONFIG_SEEDS } from './constants';
+import { LAUNCH_RULE_SEEDS, SYSTEM_CONFIG_SEEDS } from './constants';
 import { CONFIGS, getNetworkType } from './config';
 import { InitSystemConfigOptions, InitSystemConfigResponse } from './types';
+import { BN } from '@coral-xyz/anchor';
 
 // Init function
 export const initializeSystemConfigAccount = async (options: InitSystemConfigOptions): Promise<InitSystemConfigResponse> => {
@@ -53,7 +54,7 @@ export const initializeSystemConfigAccount = async (options: InitSystemConfigOpt
     [Buffer.from(SYSTEM_CONFIG_SEEDS), (new PublicKey(CONFIGS[getNetworkType(rpcUrl)].systemManagerAccount)).toBuffer()],
     programId
   );
-  
+
   // Check if system config exists
   let systemConfigExists = false;
   let existingConfig = null;
@@ -79,6 +80,42 @@ export const initializeSystemConfigAccount = async (options: InitSystemConfigOpt
 
     await provider.connection.confirmTransaction(initializationTx, "confirmed");
   }
+
+  // Initialize Launch Rule Account
+  const launchRuleAccount = PublicKey.findProgramAddressSync(
+    [Buffer.from(LAUNCH_RULE_SEEDS), systemManager.publicKey.toBuffer()],
+    program.programId,
+  )[0];
+  console.log("Launch rule account: ", launchRuleAccount.toBase58());
+  const info = await provider.connection.getAccountInfo(launchRuleAccount);
+  if (info) {
+    console.log("Launch rule account was created, launch rule address: " + launchRuleAccount.toBase58());
+    const launchRuleData = await program.account.launchRuleData.fetch(launchRuleAccount);
+    console.log("Launch rule data", Object.fromEntries(
+      Object.entries(launchRuleData).map(([key, value]) => [key, value.toString()])
+    ));
+  } 
+  const context2 = {
+    admin: systemManager.publicKey,
+    launchRuleData: launchRuleAccount,
+    systemProgram: SystemProgram.programId,
+  };
+
+  const tx = await program.methods
+    .initializeLaunchRule(
+      // ###### Update the start_slot and slots_per_period for different network
+      new BN("14150"), // start_slot
+      new BN("24000"), // slots_per_period
+      new BN("3"), // base_launch_limit
+      new BN("4"), // increasement_launch_limit
+      new BN("12"), // max_period
+    )
+    .accounts(context2)
+    .signers([systemManager])
+    .rpc();
+
+  await provider.connection.confirmTransaction(tx, "confirmed");
+  console.log("Initialize LaunchRule tx: ", tx);
 
   // Return structured data
   return {

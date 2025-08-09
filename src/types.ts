@@ -247,3 +247,14 @@ export interface MetadataParams {
     medium?: string;
   }
 }
+
+export interface TokenParams {
+  targetEras: BN;
+  epochesPerEra: BN;
+  targetSecondsPerEpoch: BN;
+  reduceRatio: BN;
+  initialMintSize: BN;
+  initialTargetMintSizePerEpoch: BN;
+  feeRate: BN;
+  liquidityTokensRatio: BN;
+}

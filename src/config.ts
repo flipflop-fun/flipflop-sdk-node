@@ -10,11 +10,11 @@ export const getNetworkType = (rpcUrl: string): 'local' | 'devnet' | 'mainnet' =
 export const CONFIGS = {
   local: {
     programId: 'FLipzZfErPUtDQPj9YrC6wp4nRRiVxRkFm3jdFmiPHJV',
-    lookupTableAccount: '6MzoPgNhKXsEx91X6aPyNXdsMMjrZBPLJ9s74Lxezs7A',
+    lookupTableAccount: '6wAja2dNrE7Ti4NGt8YPGsar1P36hkHrrgA8feuRLARb',
     systemManagerAccount: 'DJ3jvpv6k7uhq8h9oVHZck6oY4dQqY1GHaLvCLjSqxaD',
-    cpSwapProgram: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
-    cpSwapConfigAddress: 'D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2',
-    createPoolFeeReceive: 'DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8',
+    cpSwapProgram: 'CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW',
+    cpSwapConfigAddress: '9zSzfkYy6awexsHvmggeH36pfVUdDGyCcwmjT3AQPBj6',
+    createPoolFeeReceive: 'G11FKBRaAkHAKuLCgLM6K6NUc9rTjPAznRCjZifrTQe2',
     irysGatewayUrl: "https://gateway.irys.xyz",
     apiBaseUrl: 'https://api-dev.flipflop.plus',
   } as NetworkConfig,
