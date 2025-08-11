@@ -11,7 +11,7 @@ describe('set urc', () => {
         rpc: 'http://127.0.0.1:8899',
         mint: new PublicKey('FrN8g4QNaJoVBazsqpt9sCQTTVgLjMrqXYPdg1V7oZNv'),
         urc: 'TRP10_URC',
-        refAccount: loadKeypairFromBase58('3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW'),
+        refAccount: loadKeypairFromBase58(OPERATOR_KEYPAIR),
       };
 
       // Act

@@ -1,25 +1,38 @@
-import { Connection, PublicKey } from '@solana/web3.js';
-import { CONFIG_DATA_SEED, REFERRAL_SEED, SYSTEM_CONFIG_SEEDS, REFERRAL_CODE_SEED } from './constants';
-import { cleanTokenName, getMetadataByMint, getURCDetails, initProvider, mintBy } from './utils';
-import { CONFIGS, getNetworkType } from './config';
-import { MintTokenOptions, MintTokenResponse } from './types';
+import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  CONFIG_DATA_SEED,
+  REFERRAL_SEED,
+  SYSTEM_CONFIG_SEEDS,
+  REFERRAL_CODE_SEED,
+} from "./constants";
+import {
+  cleanTokenName,
+  getMetadataByMint,
+  getURCDetails,
+  initProvider,
+  mintBy,
+} from "./utils";
+import { CONFIGS, getNetworkType } from "./config";
+import { MintTokenOptions, MintTokenResponse } from "./types";
 
-export const mintToken = async (options: MintTokenOptions): Promise<MintTokenResponse> => {
+export const mintToken = async (
+  options: MintTokenOptions
+): Promise<MintTokenResponse> => {
   try {
     if (!options.rpc) {
-      throw new Error('Missing rpc parameter');
+      throw new Error("Missing rpc parameter");
     }
 
     if (!options.minter) {
-      throw new Error('Missing minter parameter');
+      throw new Error("Missing minter parameter");
     }
 
     if (!options.mint) {
-      throw new Error('Missing mint parameter');
+      throw new Error("Missing mint parameter");
     }
 
     if (!options.urc) {
-      throw new Error('Missing urc parameter');
+      throw new Error("Missing urc parameter");
     }
 
     const rpc = new Connection(options.rpc);
@@ -34,33 +47,42 @@ export const mintToken = async (options: MintTokenOptions): Promise<MintTokenRes
 
     const referrerAccount = await getURCDetails(rpc, program, urc);
     const [referralAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from(REFERRAL_SEED), mintAccount.toBuffer(), referrerAccount.referrerMain.toBuffer()],
-      programId,
-    );
-
-    const [systemConfigAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SYSTEM_CONFIG_SEEDS), new PublicKey(config.systemManagerAccount).toBuffer()],
+      [
+        Buffer.from(REFERRAL_SEED),
+        mintAccount.toBuffer(),
+        referrerAccount.referrerMain.toBuffer(),
+      ],
       programId
     );
 
-    const systemConfigData = await program.account.systemConfigData.fetch(systemConfigAccount);
+    const [systemConfigAccount] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from(SYSTEM_CONFIG_SEEDS),
+        new PublicKey(config.systemManagerAccount).toBuffer(),
+      ],
+      programId
+    );
+
+    const systemConfigData = await program.account.systemConfigData.fetch(
+      systemConfigAccount
+    );
     const protocolFeeAccount = systemConfigData.protocolFeeAccount;
 
     const [configAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from(CONFIG_DATA_SEED), mintAccount.toBuffer()],
-      programId,
+      programId
     );
 
     const [codeHash] = PublicKey.findProgramAddressSync(
       [Buffer.from(REFERRAL_CODE_SEED), Buffer.from(urc)],
-      programId,
+      programId
     );
 
     const metadataData = await getMetadataByMint(rpc, mintAccount);
     if (!metadataData.success) {
       throw new Error(`Failed to get token metadata: ${metadataData.message}`);
     }
-    
+
     const _name = cleanTokenName(metadataData.data.name);
     const _symbol = cleanTokenName(metadataData.data.symbol);
 
@@ -71,12 +93,14 @@ export const mintToken = async (options: MintTokenOptions): Promise<MintTokenRes
       configAccount,
       referralAccount,
       referrerAccount.referrerMain, // referrer
-      {name: _name, symbol: _symbol},
+      { name: _name, symbol: _symbol },
       codeHash,
       minter, // minter
       systemConfigAccount,
       provider.connection,
-      options.lookupTableAccount ? options.lookupTableAccount : new PublicKey(config.lookupTableAccount),
+      options.lookupTableAccount
+        ? options.lookupTableAccount
+        : new PublicKey(config.lookupTableAccount),
       protocolFeeAccount
     );
     // Ensure tx is always a string in the response
@@ -86,6 +110,10 @@ export const mintToken = async (options: MintTokenOptions): Promise<MintTokenRes
       data: result.data ? result.data : undefined,
     };
   } catch (error) {
-    throw new Error(`Mint operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Mint operation failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
-}
+};

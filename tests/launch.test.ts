@@ -12,7 +12,7 @@ describe('launch token', () => {
         name: 'Trump Token12',
         symbol: 'TRP12',
         tokenType: 'meme' as TokenType,
-        creator: loadKeypairFromBase58('3HtSPuKFa1Df9pgdpqnMZoa4cMkLnh3tbAuXR9aeJY9WSWTUtXvPHUMyzNRjyN9sRF586T7fLdzhNLM4rdVpW4MW'),
+        creator: loadKeypairFromBase58(OPERATOR_KEYPAIR),
       };
 
       // Act

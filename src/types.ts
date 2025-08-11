@@ -4,13 +4,13 @@ import BN from "bn.js";
 import { FairMintToken } from "./types/fair_mint_token";
 
 // Add more types from IDL as needed
-export type NetworkType = 'local' | 'devnet' | 'mainnet';
-export type TokenType = 'meme' | 'standard';
+export type NetworkType = "local" | "devnet" | "mainnet";
+export type TokenType = "meme" | "standard";
 
 export interface RemainingAccount {
-  pubkey: PublicKey,
-  isSigner: boolean,
-  isWritable: boolean
+  pubkey: PublicKey;
+  isSigner: boolean;
+  isWritable: boolean;
 }
 
 export interface ReferralAccountData {
@@ -108,7 +108,7 @@ export interface LaunchTokenResponse {
   mintAddress: PublicKey;
   configAddress: PublicKey;
   metadata: TokenMetadata;
-  configuration: ConfigAccountData
+  configuration: ConfigAccountData;
 }
 
 export interface ConfigAccountData {
@@ -191,7 +191,7 @@ export interface MintTokenResponse {
     tx: string;
     owner: PublicKey;
     tokenAccount: PublicKey;
-  }
+  };
 }
 
 export interface InitSystemConfigOptions {
@@ -245,7 +245,7 @@ export interface MetadataParams {
     telegram?: string;
     github?: string;
     medium?: string;
-  }
+  };
 }
 
 export interface TokenParams {

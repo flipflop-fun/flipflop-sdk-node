@@ -1,21 +1,27 @@
-import { Connection, PublicKey } from '@solana/web3.js';
-import { getMetadataByMint, getTokenBalance, initProviderNoSigner, parseConfigData } from './utils';
-import { CONFIG_DATA_SEED } from './constants';
-import { GetMintDataOptions, GetMintDataResponse } from './types';
-
+import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  getMetadataByMint,
+  getTokenBalance,
+  initProviderNoSigner,
+  parseConfigData,
+} from "./utils";
+import { CONFIG_DATA_SEED } from "./constants";
+import { GetMintDataOptions, GetMintDataResponse } from "./types";
 
 // Get mint information function
-export const getMintData = async (options: GetMintDataOptions): Promise<GetMintDataResponse> => {
+export const getMintData = async (
+  options: GetMintDataOptions
+): Promise<GetMintDataResponse> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error('Missing --rpc parameter');
+    throw new Error("Missing --rpc parameter");
   }
 
   if (!options.mint) {
-    throw new Error('Missing --mint parameter');
+    throw new Error("Missing --mint parameter");
   }
 
-  const rpc = new Connection(options.rpc, 'confirmed');
+  const rpc = new Connection(options.rpc, "confirmed");
   const mintAccount = new PublicKey(options.mint);
 
   const { program, programId } = await initProviderNoSigner(rpc);
@@ -24,26 +30,28 @@ export const getMintData = async (options: GetMintDataOptions): Promise<GetMintD
     // Get token metadata
     const metadataData = await getMetadataByMint(rpc, mintAccount);
     if (!metadataData.success) {
-      throw new Error(`❌ Failed to get token metadata: ${metadataData.message}`);
+      throw new Error(
+        `❌ Failed to get token metadata: ${metadataData.message}`
+      );
     }
 
     // Get config account details
     const [configAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from(CONFIG_DATA_SEED), new PublicKey(mintAccount).toBuffer()],
-      new PublicKey(programId),
+      new PublicKey(programId)
     );
 
     const configAccountInfo = await parseConfigData(program, configAccount);
     if (!configAccountInfo) {
-      throw new Error('❌ Failed to get config account data');
+      throw new Error("❌ Failed to get config account data");
     }
 
     // Return structured data instead of console output
-    const cleanName = metadataData.data.name.replace(/\x00/g, '').trim();
-    const cleanSymbol = metadataData.data.symbol.replace(/\x00/g, '').trim();
-    const cleanUri = metadataData.data.uri.replace(/\x00/g, '').trim();
+    const cleanName = metadataData.data.name.replace(/\x00/g, "").trim();
+    const cleanSymbol = metadataData.data.symbol.replace(/\x00/g, "").trim();
+    const cleanUri = metadataData.data.uri.replace(/\x00/g, "").trim();
     const liquidityTokensRatio = configAccountInfo.liquidityTokensRatio;
-    
+
     return {
       mint: new PublicKey(metadataData.mint),
       name: cleanName,
@@ -54,8 +62,14 @@ export const getMintData = async (options: GetMintDataOptions): Promise<GetMintD
       admin: configAccountInfo.admin,
       tokenVault: configAccountInfo.tokenVault,
       wsolVault: configAccountInfo.wsolVault,
-      tokenVaultBalance: await getTokenBalance(configAccountInfo.tokenVault, program.provider.connection),
-      wsolVaultBalance: await getTokenBalance(configAccountInfo.wsolVault, program.provider.connection),
+      tokenVaultBalance: await getTokenBalance(
+        configAccountInfo.tokenVault,
+        program.provider.connection
+      ),
+      wsolVaultBalance: await getTokenBalance(
+        configAccountInfo.wsolVault,
+        program.provider.connection
+      ),
       feeRate: configAccountInfo.feeRate * 1,
       targetEras: configAccountInfo.targetEras,
       supply: configAccountInfo.supply,
@@ -77,9 +91,16 @@ export const getMintData = async (options: GetMintDataOptions): Promise<GetMintD
       mintSizeEpoch: configAccountInfo.mintSizeEpoch,
       quantityMintedEpoch: configAccountInfo.quantityMintedEpoch,
       targetMintSizeEpoch: configAccountInfo.targetMintSizeEpoch,
-      progress: (configAccountInfo.supply / configAccountInfo.maxSupply * 100).toFixed(2)
+      progress: (
+        (configAccountInfo.supply / configAccountInfo.maxSupply) *
+        100
+      ).toFixed(2),
     } as GetMintDataResponse;
   } catch (error) {
-    throw new Error(`Failed to get mint info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to get mint info: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
-}
+};
