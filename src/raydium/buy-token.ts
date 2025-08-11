@@ -100,19 +100,16 @@ export async function buyToken(
     const solReserve = isToken0Sol ? new BN(poolInfo.baseReserve) : new BN(poolInfo.quoteReserve);
     const tokenReserve = isToken0Sol ? new BN(poolInfo.quoteReserve) : new BN(poolInfo.baseReserve);
 
-    // 使用 CPMM 公式计算所需的输入数量：amountIn = (amountOut * reserveIn) / (reserveOut - amountOut)
     const amountInRequired = amountOut.mul(solReserve).div(tokenReserve.sub(amountOut));
 
-    // 应用滑点保护（默认 1% 滑点）
     const slippagePercent = options.slippage || 5;
     const slippageMultiplier = new BN(10000 + slippagePercent * 100); // 1% = 100 basis points
     const maxAmountIn = amountInRequired.mul(slippageMultiplier).div(new BN(10000));
 
-    // 获取或创建关联代币账户
     const payerInputTokenAccount = await getAssociatedTokenAddress(inputMint, payer.publicKey);
     const payerOutputTokenAccount = await getAssociatedTokenAddress(outputMint, payer.publicKey);
-    console.log('token account', payerInputTokenAccount.toBase58());
-    console.log('wsol account', payerOutputTokenAccount.toBase58());
+    // console.log('token account', payerInputTokenAccount.toBase58());
+    // console.log('wsol account', payerOutputTokenAccount.toBase58());
     const [authority] = PublicKey.findProgramAddressSync(
       [Buffer.from(AUTH_SEED)],
       new PublicKey(poolInfo.programId)
@@ -236,9 +233,7 @@ export async function buyToken(
     });
     
     await connection.confirmTransaction(sig, 'confirmed');
-    
-    console.log(`交易成功! 签名: ${sig}`);
-        
+            
     // 添加清理 WSOL 账户的逻辑
     try {
       const wsolAccountInfo = await getAccount(connection, payerInputTokenAccount);
@@ -269,16 +264,10 @@ export async function buyToken(
         
         const closeSig = await connection.sendTransaction(closeTx);
         await connection.confirmTransaction(closeSig, 'confirmed');
-        console.log(`WSOL 账户已清理，剩余 ${remainingWsolBalance.toNumber() / LAMPORTS_PER_SOL} SOL 已转回`);
       }
     } catch (error) {
-      console.log('清理 WSOL 账户时出错:', error);
-      // 不抛出错误，因为主要交易已经成功
+      console.error('Error while unwrap WSOL:', error);
     }
-    
-    console.log(`交易成功! 签名: ${sig}`);
-
-
 
     return {
       mintAddress: new PublicKey(options.mint),

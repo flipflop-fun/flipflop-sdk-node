@@ -17,7 +17,7 @@ export interface DisplayLPOptions {
   mint: string;
 }
 
-export interface LPDisplayInfo {
+export interface LPDisplayResponse {
   poolId: PublicKey;
   lpTokenMint: PublicKey;
   lpTokenBalance: BN;
@@ -29,7 +29,7 @@ export interface LPDisplayInfo {
 
 export async function displayLP(
   options: DisplayLPOptions
-): Promise<LPDisplayInfo | null> {
+): Promise<LPDisplayResponse | null> {
   try {
     const { rpc, owner, mint } = options;
 

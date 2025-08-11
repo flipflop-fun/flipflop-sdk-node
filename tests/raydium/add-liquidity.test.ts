@@ -70,7 +70,7 @@ describe('add liquidity', () => {
         const addLiquidityOptions = {
           rpc,
           mint: TOKEN_MINT, // Test token mint
-          tokenAmount: 1000, // Small amount to test
+          tokenAmount: 10000, // Small amount to test
           slippage: 5, // 30% slippage
           payer: creator,
         };

@@ -1,17 +1,22 @@
-import { Connection, PublicKey, Keypair, Transaction } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  Keypair,
+  TransactionMessage,
+  VersionedTransaction,
+  ComputeBudgetProgram,
+} from "@solana/web3.js";
 import {
   createBurnInstruction,
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
-  AccountLayout,
+  getAccount,
   NATIVE_MINT,
+  TokenAccountNotFoundError,
 } from "@solana/spl-token";
-import {
-  Raydium,
-  TxVersion,
-  ApiV3PoolInfoStandardItemCpmm,
-} from "@raydium-io/raydium-sdk-v2";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { CONFIGS, getNetworkType } from "../config";
+import { getPoolInfoByRpc } from "./display-pool";
 import BN from "bn.js";
 
 export interface BurnLiquidityOptions {
@@ -24,7 +29,7 @@ export interface BurnLiquidityOptions {
 export interface BurnLiquidityResponse {
   signature: string;
   mintAddress: string;
-  lpTokenAmount: number;
+  burnedLpTokenAmount: number;
   lpMintAddress: string;
   poolAddress: string;
 }
@@ -50,58 +55,65 @@ export const burnLiquidity = async (
   }
 
   const connection = new Connection(options.rpc, "confirmed");
-  const config = CONFIGS[getNetworkType(options.rpc)];
+  const networkType = getNetworkType(options.rpc);
+  const config = CONFIGS[networkType];
 
   try {
     // Initialize Raydium SDK
     const raydium = await Raydium.load({
-      owner: options.burner,
       connection,
-      cluster: getNetworkType(options.rpc) as any,
+      cluster: networkType as any,
       disableFeatureCheck: true,
       disableLoadToken: false,
       blockhashCommitment: "finalized",
     });
 
-    // Get token mint
-    const mintPubkey = new PublicKey(options.mint);
+    // Get pool info using getPoolInfoByRpc function
+    const poolInfo = await getPoolInfoByRpc(
+      connection,
+      raydium,
+      options.mint,
+      NATIVE_MINT.toBase58(),
+      options.rpc
+    );
 
-    // Find CPMM pool for the token pair (Token/SOL)
-    const cpmmPools = await raydium.api.fetchPoolByMints({
-      mint1: options.mint,
-      mint2: NATIVE_MINT
-    });
-
-    if (!cpmmPools || !cpmmPools.data || cpmmPools.data.length === 0) {
+    if (!poolInfo) {
       throw new Error(`No CPMM pool found for token ${options.mint}`);
     }
 
-    const poolInfo = cpmmPools.data[0] as ApiV3PoolInfoStandardItemCpmm;
+    // Get LP mint from pool info
+    const lpMintPubkey = poolInfo.lpMint;
+    // console.log(`Found LP mint: ${lpMintPubkey.toBase58()}`);
 
-    // Get LP token info
+    // Get LP token info to determine decimals
     const lpTokenInfo = await raydium.token.getTokenInfo(
-      poolInfo.lpMint.address
+      lpMintPubkey.toBase58()
     );
 
     if (!lpTokenInfo) {
       throw new Error("Failed to get LP token information");
     }
 
-    const lpMintPubkey = new PublicKey(poolInfo.lpMint.address);
-
-    // Check LP token balance
-    const lpTokenAccounts = await connection.getTokenAccountsByOwner(
-      options.burner.publicKey,
-      { mint: lpMintPubkey }
+    // Get the associated token account for LP tokens
+    const lpTokenAccount = await getAssociatedTokenAddress(
+      lpMintPubkey,
+      options.burner.publicKey
     );
 
-    if (lpTokenAccounts.value.length === 0) {
-      throw new Error(`No LP token account found for pool ${poolInfo.id}`);
+    // Check LP token account exists and get balance
+    let lpTokenAccountInfo;
+    try {
+      lpTokenAccountInfo = await getAccount(connection, lpTokenAccount);
+    } catch (error) {
+      if (error instanceof TokenAccountNotFoundError) {
+        throw new Error(
+          `No LP token account found for pool ${poolInfo.poolAddress.toBase58()}. Please ensure you have LP tokens to burn.`
+        );
+      }
+      throw error;
     }
 
-    const lpTokenAccountInfo = AccountLayout.decode(
-      lpTokenAccounts.value[0].account.data
-    );
+    // Check LP token balance
     const availableLpBalance = new BN(lpTokenAccountInfo.amount.toString())
       .div(new BN(10).pow(new BN(lpTokenInfo.decimals)))
       .toNumber();
@@ -112,15 +124,21 @@ export const burnLiquidity = async (
       );
     }
 
-    // Get the associated token account for LP tokens
-    const lpTokenAccount = await getAssociatedTokenAddress(
-      lpMintPubkey,
-      options.burner.publicKey
-    );
+    // console.log(
+    //   `Burning ${options.lpTokenAmount} LP tokens from available ${availableLpBalance}`
+    // );
 
     // Calculate burn amount with decimals
-    const burnAmount = new BN(
-      options.lpTokenAmount * Math.pow(10, lpTokenInfo.decimals)
+    const burnAmount = new BN(options.lpTokenAmount).mul(
+      new BN(10).pow(new BN(lpTokenInfo.decimals))
+    );
+
+    const instructions = [];
+
+    // Add compute budget instructions
+    instructions.push(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 })
     );
 
     // Create burn instruction
@@ -128,22 +146,28 @@ export const burnLiquidity = async (
       lpTokenAccount,
       lpMintPubkey,
       options.burner.publicKey,
-      burnAmount.toNumber()
+      burnAmount.toNumber(),
+      [],
+      TOKEN_PROGRAM_ID
     );
+
+    instructions.push(burnInstruction);
 
     // Create and send transaction
-    const transaction = new Transaction().add(burnInstruction);
-
-    // Get recent blockhash
     const { blockhash } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = options.burner.publicKey;
+    const message = new TransactionMessage({
+      payerKey: options.burner.publicKey,
+      recentBlockhash: blockhash,
+      instructions,
+    }).compileToV0Message();
 
-    // Sign and send transaction
-    transaction.sign(options.burner);
-    const signature = await connection.sendRawTransaction(
-      transaction.serialize()
-    );
+    const tx = new VersionedTransaction(message);
+    tx.sign([options.burner]);
+
+    const signature = await connection.sendTransaction(tx, {
+      skipPreflight: false,
+      preflightCommitment: "confirmed",
+    });
 
     // Confirm transaction
     await connection.confirmTransaction(signature, "confirmed");
@@ -151,9 +175,9 @@ export const burnLiquidity = async (
     return {
       signature,
       mintAddress: options.mint,
-      lpTokenAmount: options.lpTokenAmount,
-      lpMintAddress: poolInfo.lpMint.address,
-      poolAddress: poolInfo.id,
+      burnedLpTokenAmount: options.lpTokenAmount,
+      lpMintAddress: lpMintPubkey.toBase58(),
+      poolAddress: poolInfo.poolAddress.toBase58(),
     };
   } catch (error) {
     console.error("Burn liquidity error:", error);

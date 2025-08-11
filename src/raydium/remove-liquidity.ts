@@ -86,8 +86,8 @@ export async function removeLiquidity(
       new Percent(slippage, 100)
     );
 
-    console.log("Liquidity removed successfully. Transaction ID:", result.signature);
-    console.log("Pool ID:", poolInfo.poolAddress);
+    // console.log("Liquidity removed successfully. Transaction ID:", result.signature);
+    // console.log("Pool ID:", poolInfo.poolAddress);
 
     return {
       success: true,
@@ -153,15 +153,15 @@ async function doRemoveLiquidityInstruction(
   const vault0 = isAFirst ? new PublicKey(poolInfo.vaultA) : new PublicKey(poolInfo.vaultB);
   const vault1 = isAFirst ? new PublicKey(poolInfo.vaultB) : new PublicKey(poolInfo.vaultA);
 
-  console.log("Remove liquidity parameters:", {
-    lpTokenAmount: lpTokenAmountBN.toString(),
-    expectedAmount0: expectedAmount0.toString(),
-    expectedAmount1: expectedAmount1.toString(),
-    minAmount0: minAmount0.toString(),
-    minAmount1: minAmount1.toString(),
-    mint0: mint0.toString(),
-    mint1: mint1.toString(),
-  });
+  // console.log("Remove liquidity parameters:", {
+  //   lpTokenAmount: lpTokenAmountBN.toString(),
+  //   expectedAmount0: expectedAmount0.toString(),
+  //   expectedAmount1: expectedAmount1.toString(),
+  //   minAmount0: minAmount0.toString(),
+  //   minAmount1: minAmount1.toString(),
+  //   mint0: mint0.toString(),
+  //   mint1: mint1.toString(),
+  // });
 
   // 创建withdraw指令
   const withdrawIx = makeWithdrawCpmmInInstruction(

@@ -23,6 +23,6 @@ export type {
   BurnLiquidityOptions,
   BurnLiquidityResponse,
 } from "./burn-liquidity";
-export type { DisplayPoolOptions, PoolDisplayInfo } from "./display-pool";
-export type { DisplayLPOptions, LPDisplayInfo } from "./display-lp";
+export type { DisplayPoolOptions, DisplayPoolResponse } from "./display-pool";
+export type { DisplayLPOptions, LPDisplayResponse } from "./display-lp";
 export type { CreatePoolOptions, CreatePoolResponse } from "./create-pool";
