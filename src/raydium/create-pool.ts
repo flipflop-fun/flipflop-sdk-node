@@ -20,26 +20,7 @@ import {
 import { CONFIGS, getNetworkType } from "../config";
 import BN from "bn.js";
 import { compareMints } from "../utils";
-
-export interface CreatePoolOptions {
-  rpc: string;
-  mintA: string; // Base token mint (e.g., SOL)
-  mintB: string; // Quote token mint (e.g., USDC)
-  amountA: number; // Amount of base token
-  amountB: number; // Amount of quote token
-  creator: Keypair;
-  startTime?: number; // Pool start time (default: current time)
-}
-
-export interface CreatePoolResponse {
-  signature: string;
-  poolAddress: string;
-  mintA: string;
-  mintB: string;
-  amountA: string;
-  amountB: string;
-  creator: string;
-}
+import { CreatePoolOptions, CreatePoolResponse } from "./types";
 
 export const createPool = async (
   options: CreatePoolOptions,
@@ -199,12 +180,12 @@ export const createPool = async (
 
       return {
         signature: String(txId),
-        poolAddress: extInfo.address.poolId.toString(),
-        mintA: mint0.toString(),
-        mintB: mint1.toString(),
-        amountA: finalAmountA.toString(),
-        amountB: finalAmountB.toString(),
-        creator: options.creator.publicKey.toString(),
+        poolAddress: extInfo.address.poolId,
+        mintA: mint0,
+        mintB: mint1,
+        amountA: finalAmountA,
+        amountB: finalAmountB,
+        creator: options.creator.publicKey,
       };
     } catch (error) {
       console.error("Pool creation transaction error:", error);

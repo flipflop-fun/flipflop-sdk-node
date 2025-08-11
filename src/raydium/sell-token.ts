@@ -23,22 +23,7 @@ import { getPoolInfoByRpc } from './display-pool';
 import { CONFIGS, getNetworkType } from '../config';
 import { Raydium, getPdaObservationId, makeSwapCpmmBaseInInstruction } from '@raydium-io/raydium-sdk-v2';
 import { AUTH_SEED } from '../constants';
-
-export interface SellTokenOptions {
-  rpc: string;
-  mint: string;
-  amount: number; // Token amount to sell
-  slippage?: number; // slippage in percentage (e.g., 1 for 1%)
-  seller: Keypair;
-}
-
-export interface SellTokenResponse {
-  mintAddress: PublicKey;
-  tokenAmount: number;
-  solAmount: number;
-  poolAddress: PublicKey;
-  txId: string;
-}
+import { SellTokenOptions, SellTokenResponse } from './types';
 
 export async function sellToken(
   options: SellTokenOptions,
@@ -63,7 +48,7 @@ export async function sellToken(
       connection,
       raydium,
       options.mint,
-      NATIVE_MINT.toBase58(),
+      NATIVE_MINT,
       options.rpc,
     );
     if (!poolInfo) {

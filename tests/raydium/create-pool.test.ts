@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
-import { Connection, Keypair } from '@solana/web3.js';
-import { createPool, CreatePoolOptions } from '../../src/raydium/create-pool';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { createPool } from '../../src/raydium/create-pool';
 import { loadKeypairFromBase58 } from '../../src/utils';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { OPERATOR_KEYPAIR, TOKEN_MINT } from './config';
@@ -47,8 +47,8 @@ describe('Create CPMM Pool Tests', () => {
       // Arrange
       const createPoolOptions = {
         rpc: testRpc,
-        mintA: testMintA, // SOL
-        mintB: testMintB, // Token
+        mintA: new PublicKey(testMintA), // SOL
+        mintB: new PublicKey(testMintB), // Token
         amountA: 1, // 1 SOL
         amountB: 100, // 100 Token
         creator: creator,

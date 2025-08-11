@@ -22,22 +22,7 @@ import { getPoolInfoByRpc } from './display-pool';
 import { CONFIGS, getNetworkType } from '../config';
 import { Raydium, getPdaObservationId, makeSwapCpmmBaseOutInstruction } from '@raydium-io/raydium-sdk-v2';
 import { AUTH_SEED } from '../constants';
-
-export interface BuyTokenOptions {
-  rpc: string;
-  mint: string;
-  amount: number;
-  slippage?: number;
-  payer: Keypair;
-}
-
-export interface BuyTokenResponse {
-  mintAddress: PublicKey;
-  solAmount: number;
-  tokenAmount: number;
-  poolAddress: PublicKey;
-  txId: string;
-}
+import { BuyTokenOptions, BuyTokenResponse } from './types';
 
 export async function buyToken(
   options: BuyTokenOptions,
@@ -76,7 +61,7 @@ export async function buyToken(
     const poolInfo = await getPoolInfoByRpc(
       connection,
       raydium,
-      NATIVE_MINT.toBase58(),
+      NATIVE_MINT,
       options.mint,
       options.rpc,
     );

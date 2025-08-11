@@ -6,26 +6,11 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import { getAssociatedTokenAddress, NATIVE_MINT, AccountLayout, MintLayout } from "@solana/spl-token";
 import BN from "bn.js";
-import { DisplayPoolResponse, getPoolInfoByRpc } from "./display-pool";
+import { getPoolInfoByRpc } from "./display-pool";
 import { CONFIGS, getNetworkType } from "../config";
 import { compareMints } from "../utils";
 import { AUTH_SEED } from "../constants";
-
-export interface RemoveLiquidityOptions {
-  rpc: string;
-  payer: Keypair;
-  mint: string;
-  removePercentage: number;
-  slippage?: number;
-}
-
-export interface RemoveLiquidityResponse {
-  success: boolean;
-  signature?: string;
-  error?: string;
-  tokenAAmount?: string;
-  tokenBAmount?: string;
-}
+import { DisplayPoolResponse, RemoveLiquidityOptions, RemoveLiquidityResponse } from "./types";
 
 export async function removeLiquidity(
   options: RemoveLiquidityOptions
@@ -60,7 +45,7 @@ export async function removeLiquidity(
     const poolInfo = await getPoolInfoByRpc(
       connection,
       raydium,
-      NATIVE_MINT.toBase58(),
+      NATIVE_MINT,
       options.mint,
       options.rpc,
     );
@@ -92,8 +77,8 @@ export async function removeLiquidity(
     return {
       success: true,
       signature: result.signature,
-      tokenAAmount: result.tokenAAmount.toString(),
-      tokenBAmount: result.tokenBAmount.toString(),
+      tokenAAmount: result.tokenAAmount,
+      tokenBAmount: result.tokenBAmount,
     };
   } catch (error) {
     console.error("Error removing liquidity:", error);

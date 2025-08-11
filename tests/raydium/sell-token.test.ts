@@ -2,6 +2,7 @@ import { describe, it } from '@jest/globals';
 import { sellToken } from '../../src/raydium/sell-token';
 import { loadKeypairFromBase58 } from '../../src/utils';
 import { OPERATOR_KEYPAIR, TOKEN_MINT } from './config';
+import { PublicKey } from '@solana/web3.js';
 
 describe('sell token', () => {
   describe('successful sell', () => {
@@ -9,7 +10,7 @@ describe('sell token', () => {
       // Arrange
       const sellOptions = {
         rpc: 'http://127.0.0.1:8899',
-        mint: TOKEN_MINT, // Token mint for testing
+        mint: new PublicKey(TOKEN_MINT), // Token mint for testing
         amount: 50, // 50 tokens to sell
         slippage: 5, // 5% slippage
         seller: loadKeypairFromBase58(OPERATOR_KEYPAIR),

@@ -2,6 +2,7 @@ import { describe, it } from '@jest/globals';
 import { displayLP } from '../../src/raydium/display-lp';
 import { loadKeypairFromBase58 } from '../../src/utils';
 import { OPERATOR_KEYPAIR, TOKEN_MINT } from './config';
+import { PublicKey } from '@solana/web3.js';
 
 describe('display LP', () => {
   describe('successful display LP', () => {
@@ -11,7 +12,7 @@ describe('display LP', () => {
       const displayLpOptions = {
         rpc: 'http://127.0.0.1:8899',
         owner: wallet.publicKey,
-        mint: TOKEN_MINT, // USDC
+        mint: new PublicKey(TOKEN_MINT), // USDC
       };
 
       // Act

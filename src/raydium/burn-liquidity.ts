@@ -18,21 +18,7 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { CONFIGS, getNetworkType } from "../config";
 import { getPoolInfoByRpc } from "./display-pool";
 import BN from "bn.js";
-
-export interface BurnLiquidityOptions {
-  rpc: string;
-  mint: string;
-  lpTokenAmount: number; // LP token amount to burn
-  burner: Keypair;
-}
-
-export interface BurnLiquidityResponse {
-  signature: string;
-  mintAddress: string;
-  burnedLpTokenAmount: number;
-  lpMintAddress: string;
-  poolAddress: string;
-}
+import { BurnLiquidityOptions, BurnLiquidityResponse } from "./types";
 
 export const burnLiquidity = async (
   options: BurnLiquidityOptions
@@ -73,7 +59,7 @@ export const burnLiquidity = async (
       connection,
       raydium,
       options.mint,
-      NATIVE_MINT.toBase58(),
+      NATIVE_MINT,
       options.rpc
     );
 
@@ -176,8 +162,8 @@ export const burnLiquidity = async (
       signature,
       mintAddress: options.mint,
       burnedLpTokenAmount: options.lpTokenAmount,
-      lpMintAddress: lpMintPubkey.toBase58(),
-      poolAddress: poolInfo.poolAddress.toBase58(),
+      lpMintAddress: lpMintPubkey,
+      poolAddress: poolInfo.poolAddress,
     };
   } catch (error) {
     console.error("Burn liquidity error:", error);

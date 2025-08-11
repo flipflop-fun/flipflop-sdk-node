@@ -6,52 +6,13 @@ import {
 import { getNetworkType, CONFIGS } from "../config";
 import { compareMints, getPoolAddress } from "../utils";
 import BN from "bn.js";
-
-export interface DisplayPoolOptions {
-  connection: Connection;
-  tokenAMint: string;
-  tokenBMint: string;
-  rpc?: string;
-}
-
-export interface DisplayPoolResponse {
-  poolAddress: PublicKey;
-  configId: PublicKey;
-  poolCreator: PublicKey;
-  vaultA: PublicKey;
-  vaultB: PublicKey;
-  mintLp: PublicKey;
-  mintA: PublicKey;
-  mintB: PublicKey;
-  mintProgramA: PublicKey;
-  mintProgramB: PublicKey;
-  observationId: PublicKey;
-  bump: number;
-  status: number;
-  lpDecimals: number;
-  mintDecimalA: number;
-  mintDecimalB: number;
-  lpAmount: BN;
-  protocolFeesMintA: BN;
-  protocolFeesMintB: BN;
-  fundFeesMintA: BN;
-  fundFeesMintB: BN;
-  openTime: BN;
-  programId: PublicKey;
-  baseReserve: BN;
-  quoteReserve: BN;
-  vaultAAmount: BN;
-  vaultBAmount: BN;
-  configInfo: any;
-  poolPrice: number;
-  lpMint: PublicKey;
-}
+import { DisplayPoolOptions, DisplayPoolResponse } from "./types";
 
 export const getPoolInfoByRpc = async (
   connection: Connection,
   raydium: any,
-  tokenAMint: string,
-  tokenBMint: string,
+  tokenAMint: PublicKey,
+  tokenBMint: PublicKey,
   rpc: string
 ): Promise<DisplayPoolResponse | null> => {
   try {

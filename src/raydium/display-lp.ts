@@ -7,25 +7,10 @@ import {
   NATIVE_MINT,
 } from "@solana/spl-token";
 import BN from "bn.js";
-import { DisplayPoolResponse, getPoolInfoByRpc } from "./display-pool";
+import { getPoolInfoByRpc } from "./display-pool";
 import { CONFIGS, getNetworkType } from "../config";
 import { getLpTokenAmount } from "./remove-liquidity";
-
-export interface DisplayLPOptions {
-  rpc: string;
-  owner: PublicKey;
-  mint: string;
-}
-
-export interface LPDisplayResponse {
-  poolId: PublicKey;
-  lpTokenMint: PublicKey;
-  lpTokenBalance: BN;
-  shareOfPool: number;
-  tokenAAmount: BN;
-  tokenBAmount: BN;
-  poolInfo: DisplayPoolResponse;
-}
+import { DisplayLPOptions, LPDisplayResponse } from "./types";
 
 export async function displayLP(
   options: DisplayLPOptions
@@ -62,7 +47,7 @@ export async function displayLP(
     const poolInfo = await getPoolInfoByRpc(
       connection,
       raydium,
-      NATIVE_MINT.toBase58(),
+      NATIVE_MINT,
       mint,
       rpc,
     );

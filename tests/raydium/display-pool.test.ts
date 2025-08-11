@@ -1,6 +1,6 @@
 import { describe, it } from '@jest/globals';
 import { displayPool } from '../../src/raydium/display-pool';
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_MINT } from './config';
 import { NATIVE_MINT } from '@solana/spl-token';
 
@@ -11,8 +11,8 @@ describe('display pool', () => {
       const connection = new Connection('http://127.0.0.1:8899', 'confirmed');
       const displayPoolOptions = {
         connection,
-        tokenAMint: TOKEN_MINT, // USDC mint for testing
-        tokenBMint: NATIVE_MINT.toBase58(), // SOL mint
+        tokenAMint: new PublicKey(TOKEN_MINT), // USDC mint for testing
+        tokenBMint: new PublicKey(NATIVE_MINT.toBase58()), // SOL mint
         rpc: 'http://127.0.0.1:8899', // 明确指定 RPC 用于网络类型判断
       };
 

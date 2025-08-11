@@ -7,26 +7,10 @@ import {
 import { AccountLayout, getAssociatedTokenAddress, NATIVE_MINT, createAssociatedTokenAccountInstruction, getAccount, createSyncNativeInstruction } from "@solana/spl-token";
 import { CONFIGS, getNetworkType } from "../config";
 import BN from "bn.js";
-import { DisplayPoolResponse, getPoolInfoByRpc } from "./display-pool";
+import { getPoolInfoByRpc } from "./display-pool";
 import { compareMints } from "../utils";
 import { AUTH_SEED } from "../constants";
-
-export interface AddLiquidityOptions {
-  rpc: string;
-  mint: string;
-  tokenAmount: number; // Token amount to add
-  slippage: number; // slippage in percentage (e.g., 1 for 1%)
-  payer: Keypair;
-}
-
-export interface AddLiquidityResponse {
-  signature: string;
-  mintAddress: PublicKey;
-  tokenAmount: BN;
-  solAmount: BN; // SOL amount calculated based on pool ratio
-  lpTokenAmount: BN;
-  poolAddress: PublicKey;
-}
+import { AddLiquidityOptions, AddLiquidityResponse, DisplayPoolResponse } from "./types";
 
 export const addLiquidity = async (
   options: AddLiquidityOptions
@@ -107,7 +91,7 @@ export const addLiquidity = async (
     const poolInfo = await getPoolInfoByRpc(
       connection,
       raydium,
-      NATIVE_MINT.toBase58(),
+      NATIVE_MINT,
       options.mint,
       options.rpc,
     );
