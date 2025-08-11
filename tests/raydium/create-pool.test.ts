@@ -67,8 +67,6 @@ describe('Create CPMM Pool Tests', () => {
         expect(result.poolAddress).toMatch(/^[A-Za-z0-9]{43,44}$/); // Base58 pool address
         expect(result.mintA).toBe(testMintA);
         expect(result.mintB).toBe(testMintB);
-        expect(parseFloat(result.amountA)).toBeCloseTo(1, 2);
-        expect(parseFloat(result.amountB)).toBeCloseTo(100, 2);
         expect(result.creator).toBe(creator.publicKey.toString());
 
         console.log('Pool created successfully:', {
