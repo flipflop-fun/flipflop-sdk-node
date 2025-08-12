@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import {
   Raydium,
   ZERO,
@@ -10,25 +10,34 @@ import BN from "bn.js";
 import { getPoolInfoByRpc } from "./display-pool";
 import { CONFIGS, getNetworkType } from "../config";
 import { getLpTokenAmount } from "./remove-liquidity";
-import { DisplayLPOptions, LPDisplayResponse } from "./types";
+import { ApiResponse, DisplayLPOptions, DisplayPoolResponse, LPDisplayResponse } from "./types";
 
 export async function displayLP(
   options: DisplayLPOptions
-): Promise<LPDisplayResponse | null> {
+): Promise<ApiResponse<LPDisplayResponse> | null> {
   try {
     const { rpc, owner, mint } = options;
 
     // Validate inputs
     if (!mint) {
-      throw new Error("Token mint is required");
+      return {
+        success: false,
+        message: "Token mint is required",
+      };
     }
 
     if (!owner) {
-      throw new Error("Owner is required");
+      return {
+        success: false,
+        message: "Owner is required",
+      };
     }
 
     if (!rpc) {
-      throw new Error("RPC is required");
+      return {
+        success: false,
+        message: "RPC is required",
+      };
     }
 
     const connection = new Connection(rpc, "confirmed");
@@ -53,21 +62,35 @@ export async function displayLP(
     );
 
     if (!poolInfo) {
-      console.error("No CPMM pool found for the given token");
-      return null;
+      return {
+        success: false,
+        message: "No CPMM pool found for the given token",
+      };
     }
 
+    if (!poolInfo.success) {
+      return {
+        success: false,
+        message: poolInfo.message || "Unknown error",
+      };
+    }
+
+    const poolInfoData = poolInfo.data as DisplayPoolResponse;
+
     // 获取代币信息
-    const tokenAInfo = await raydium.token.getTokenInfo(poolInfo.mintA);
-    const tokenBInfo = await raydium.token.getTokenInfo(poolInfo.mintB);
-    const lpTokenInfo = await raydium.token.getTokenInfo(poolInfo.mintLp);
+    const tokenAInfo = await raydium.token.getTokenInfo(poolInfoData.mintA);
+    const tokenBInfo = await raydium.token.getTokenInfo(poolInfoData.mintB);
+    const lpTokenInfo = await raydium.token.getTokenInfo(poolInfoData.mintLp);
 
     if (!tokenAInfo || !tokenBInfo || !lpTokenInfo) {
-      throw new Error("Failed to get token information");
+      return {
+        success: false,
+        message: "Failed to get token information",
+      };
     }
 
     // 使用与remove-liquidity.ts相同的方式获取LP代币余额
-    const lpTokenMint = poolInfo.mintLp;
+    const lpTokenMint = poolInfoData.mintLp;
     let lpTokenBalance = new BN(0);
     let shareOfPool = 0;
     let tokenAAmount = new BN(0);
@@ -75,38 +98,51 @@ export async function displayLP(
 
     try {
       const lpToken = await getLpTokenAmount(connection, owner, lpTokenMint);
+      if (!lpToken.success || !lpToken.data) {
+        return {
+          success: false,
+          message: lpToken.message || "Unknown error",
+        };
+      }
       
       // 转换为可读格式
-      lpTokenBalance = lpToken.amount;
+      lpTokenBalance = lpToken.data.amount;
 
       // 计算池子份额
-      const totalLpSupply = poolInfo.lpAmount;
+      const totalLpSupply = poolInfoData.lpAmount;
       if (totalLpSupply > ZERO) {
-        const sharePercent = lpToken.amount.mul(new BN(10000)).div(totalLpSupply).toNumber() / 100;
+        const sharePercent = lpToken.data.amount.mul(new BN(10000)).div(totalLpSupply).toNumber() / 100;
         shareOfPool = sharePercent;
 
-        const poolTokenAReserve = new BN(poolInfo.baseReserve || '0');
-        const poolTokenBReserve = new BN(poolInfo.quoteReserve || '0');
+        const poolTokenAReserve = new BN(poolInfoData.baseReserve || '0');
+        const poolTokenBReserve = new BN(poolInfoData.quoteReserve || '0');
 
-        tokenAAmount = lpToken.amount.mul(poolTokenAReserve).div(totalLpSupply);
-        tokenBAmount = lpToken.amount.mul(poolTokenBReserve).div(totalLpSupply);
+        tokenAAmount = lpToken.data.amount.mul(poolTokenAReserve).div(totalLpSupply);
+        tokenBAmount = lpToken.data.amount.mul(poolTokenBReserve).div(totalLpSupply);
       }
     } catch (error) {
-      console.warn("Could not fetch LP token balance:", error);
-      throw new Error("Failed to fetch LP token balance");
+      return {
+        success: false,
+        message: "Failed to fetch LP token balance",
+      };
     }
 
     return {
-      poolId: poolInfo.poolAddress,
-      lpTokenMint: poolInfo.mintLp,
-      lpTokenBalance,
-      shareOfPool,
-      tokenAAmount,
-      tokenBAmount,
-      poolInfo,
+      success: true,
+      data: {
+        poolId: poolInfoData.poolAddress,
+        lpTokenMint: poolInfoData.mintLp,
+        lpTokenBalance,
+        shareOfPool,
+        tokenAAmount,
+        tokenBAmount,
+        poolInfo: poolInfoData,
+      }
     };
   } catch (error) {
-    console.error("Error displaying LP info:", error);
-    return null;
+    return {
+      success: false,
+      message: "Error displaying LP info",
+    };
   }
 }

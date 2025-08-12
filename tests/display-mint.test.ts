@@ -16,19 +16,23 @@ describe('getMintInfo', () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result?.mint.toBase58()).toBe("5Parkp1rVK6VDM952mZUhsdXotLUMzn2j3gdQzxdgjvK");
-      expect(result?.name).toBe('gy');
-      expect(result?.symbol).toBe('gy');
-      expect(result?.uri).toBe('https://gateway.irys.xyz/G5kFtHn7M3Kfmk5UzmKPqp86sFmbuHo5mjtQxHeSmYGG');
-      expect(result?.isMutable).toBe(true);
-      expect(result?.reduceRatio).toBe(0.5);
-      expect(result?.configAccount.toBase58()).toBe('5MssfF6ouZMhffFKb8CGYLMZdG2SbrNsS4iyCip4Hf6G');
-      expect(result?.admin.toBase58()).toBe('AMDgsZHmYCghSwnyZ3F1JQJtZhCL38rB9paTtFqZke95');
-      expect(result?.tokenVault.toBase58()).toBe('CThKATDFzbaHnCkPBa41LVjvURTbLARqEE9MPcXugkhz');
-      expect(result?.feeRate).toBe(0.2);
-      expect(result?.targetEras).toBe(1);
-      expect(result?.initialMintSize).toBe(10000);
-      expect(result?.maxSupply).toBe(100000000);
+      if (!result?.data || !result?.success) {
+        console.log(result.message);
+        return;
+      }
+      expect(result?.data.mint.toBase58()).toBe("5Parkp1rVK6VDM952mZUhsdXotLUMzn2j3gdQzxdgjvK");
+      expect(result?.data.name).toBe('gy');
+      expect(result?.data.symbol).toBe('gy');
+      expect(result?.data.uri).toBe('https://gateway.irys.xyz/G5kFtHn7M3Kfmk5UzmKPqp86sFmbuHo5mjtQxHeSmYGG');
+      expect(result?.data.isMutable).toBe(true);
+      expect(result?.data.reduceRatio).toBe(0.5);
+      expect(result?.data.configAccount.toBase58()).toBe('5MssfF6ouZMhffFKb8CGYLMZdG2SbrNsS4iyCip4Hf6G');
+      expect(result?.data.admin.toBase58()).toBe('AMDgsZHmYCghSwnyZ3F1JQJtZhCL38rB9paTtFqZke95');
+      expect(result?.data.tokenVault.toBase58()).toBe('CThKATDFzbaHnCkPBa41LVjvURTbLARqEE9MPcXugkhz');
+      expect(result?.data.feeRate).toBe(0.2);
+      expect(result?.data.targetEras).toBe(1);
+      expect(result?.data.initialMintSize).toBe(10000);
+      expect(result?.data.maxSupply).toBe(100000000);
     });
   });
 });

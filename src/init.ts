@@ -4,17 +4,24 @@ import { LAUNCH_RULE_SEEDS, SYSTEM_CONFIG_SEEDS } from "./constants";
 import { CONFIGS, getNetworkType } from "./config";
 import { InitSystemConfigOptions, InitSystemConfigResponse } from "./types";
 import { BN } from "@coral-xyz/anchor";
+import { ApiResponse } from "./raydium/types";
 
 // Init function
 export const initializeSystemConfigAccount = async (
   options: InitSystemConfigOptions
-): Promise<InitSystemConfigResponse> => {
+): Promise<ApiResponse<InitSystemConfigResponse>> => {
   if (!options.rpc) {
-    throw new Error("Missing rpc parameter");
+    return {
+      success: false,
+      message: "Missing rpc parameter",
+    };
   }
 
   if (!options.systemManager) {
-    throw new Error("Missing system-manager parameter");
+    return {
+      success: false,
+      message: "Missing system-manager parameter",
+    };
   }
 
   const rpcUrl = options.rpc;
@@ -151,12 +158,14 @@ export const initializeSystemConfigAccount = async (
   // Return structured data
   return {
     success: true,
-    lookupTableAddress: lookupTableAddress,
-    systemConfigAddress: systemConfigAccount,
-    systemManager: systemManager.publicKey,
-    createdNewLUT,
-    // systemConfigExists,
-    // initializationTx,
-    // configuration: existingConfig
+    data: {
+      lookupTableAddress: lookupTableAddress,
+      systemConfigAddress: systemConfigAccount,
+      systemManager: systemManager.publicKey,
+      createdNewLUT,
+      // systemConfigExists,
+      // initializationTx,
+      // configuration: existingConfig
+    }
   };
 };

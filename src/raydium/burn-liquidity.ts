@@ -1,7 +1,5 @@
 import {
   Connection,
-  PublicKey,
-  Keypair,
   TransactionMessage,
   VersionedTransaction,
   ComputeBudgetProgram,
@@ -18,26 +16,38 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { CONFIGS, getNetworkType } from "../config";
 import { getPoolInfoByRpc } from "./display-pool";
 import BN from "bn.js";
-import { BurnLiquidityOptions, BurnLiquidityResponse } from "./types";
+import { ApiResponse, BurnLiquidityOptions, BurnLiquidityResponse, DisplayPoolResponse } from "./types";
 
 export const burnLiquidity = async (
   options: BurnLiquidityOptions
-): Promise<BurnLiquidityResponse> => {
+): Promise<ApiResponse<BurnLiquidityResponse>> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error("Missing rpc parameter");
+    return {
+      success: false,
+      message: "Missing rpc parameter",
+    };
   }
 
   if (!options.mint) {
-    throw new Error("Missing mint parameter");
+    return {
+      success: false,
+      message: "Missing mint parameter",
+    };
   }
 
   if (!options.lpTokenAmount || options.lpTokenAmount <= 0) {
-    throw new Error("Invalid lpTokenAmount parameter");
+    return {
+      success: false,
+      message: "Invalid lpTokenAmount parameter",
+    };
   }
 
   if (!options.burner) {
-    throw new Error("Missing burner parameter");
+    return {
+      success: false,
+      message: "Missing burner parameter",
+    };
   }
 
   const connection = new Connection(options.rpc, "confirmed");
@@ -64,11 +74,23 @@ export const burnLiquidity = async (
     );
 
     if (!poolInfo) {
-      throw new Error(`No CPMM pool found for token ${options.mint}`);
+      return {
+        success: false,
+        message: `No CPMM pool found for token ${options.mint}`,
+      };
     }
 
+    if (!poolInfo.success) {
+      return {
+        success: false,
+        message: poolInfo.message || "Unknown error",
+      }
+    }
+
+    const poolInfoData = poolInfo.data as DisplayPoolResponse;
+
     // Get LP mint from pool info
-    const lpMintPubkey = poolInfo.lpMint;
+    const lpMintPubkey = poolInfoData.lpMint;
     // console.log(`Found LP mint: ${lpMintPubkey.toBase58()}`);
 
     // Get LP token info to determine decimals
@@ -77,7 +99,10 @@ export const burnLiquidity = async (
     );
 
     if (!lpTokenInfo) {
-      throw new Error("Failed to get LP token information");
+      return {
+        success: false,
+        message: "Failed to get LP token information",
+      };
     }
 
     // Get the associated token account for LP tokens
@@ -92,11 +117,15 @@ export const burnLiquidity = async (
       lpTokenAccountInfo = await getAccount(connection, lpTokenAccount);
     } catch (error) {
       if (error instanceof TokenAccountNotFoundError) {
-        throw new Error(
-          `No LP token account found for pool ${poolInfo.poolAddress.toBase58()}. Please ensure you have LP tokens to burn.`
-        );
+        return {
+          success: false,
+          message: `No LP token account found for pool ${poolInfoData.poolAddress.toBase58()}. Please ensure you have LP tokens to burn.`,
+        };
       }
-      throw error;
+      return {
+        success: false,
+        message: `Error checking LP token account: ${(error as any).message}`,
+      }
     }
 
     // Check LP token balance
@@ -105,9 +134,10 @@ export const burnLiquidity = async (
       .toNumber();
 
     if (availableLpBalance < options.lpTokenAmount) {
-      throw new Error(
-        `Insufficient LP token balance. Available: ${availableLpBalance}, Required: ${options.lpTokenAmount}`
-      );
+      return {
+        success: false,
+        message: `Insufficient LP token balance. Available: ${availableLpBalance}, Required: ${options.lpTokenAmount}`,
+      };
     }
 
     // console.log(
@@ -159,18 +189,22 @@ export const burnLiquidity = async (
     await connection.confirmTransaction(signature, "confirmed");
 
     return {
-      signature,
-      mintAddress: options.mint,
-      burnedLpTokenAmount: options.lpTokenAmount,
-      lpMintAddress: lpMintPubkey,
-      poolAddress: poolInfo.poolAddress,
+      success: true,
+      message: "Liquidity tokens burned successfully",
+      data: {
+        signature,
+        mintAddress: options.mint,
+        burnedLpTokenAmount: options.lpTokenAmount,
+        lpMintAddress: lpMintPubkey,
+        poolAddress: poolInfoData.poolAddress,
+      }
     };
   } catch (error) {
-    console.error("Burn liquidity error:", error);
-    throw new Error(
-      `Failed to burn liquidity tokens: ${
+    return {
+      success: false,
+      message: `Failed to burn liquidity tokens: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    };
   }
 };

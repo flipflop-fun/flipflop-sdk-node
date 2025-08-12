@@ -13,16 +13,16 @@ describe('getSystemConfig', () => {
       const result = await getSystemConfig(systemConfigOptions);
 
       expect(result).toBeDefined();
-      expect(result?.systemConfigAccount.toBase58()).toBe("J2xJh4WsfXrxERa9uGVbxon3x6gRHWTj33JcZASmt9Q3");
-      expect(result?.systemManagerAccount.toBase58()).toBe('CXzddeiDgbTTxNnd1apeUGE7E1UAdvBoysf7c271AA79');
-      expect(result?.admin.toBase58()).toBe('GmZ8FxsXA1UtEJFidZPMkjY6LpYf1ivNR4AupxmiAfwx');
-      expect(result?.referrerResetIntervalSeconds).toBe(86400);
-      expect(result?.updateMetadataFee).toBe(0.1);
-      expect(result?.customizedDeployFee).toBe(10);
-      expect(result?.initPoolWsolAmount).toBe(0.25);
-      expect(result?.graduateFeeRate).toBe(5);
-      expect(result?.minGraduateFee).toBe(5);
-      expect(result?.raydiumCpmmCreateFee).toBe(0.15);
+      expect(result?.data?.systemConfigAccount.toBase58()).toBe("J2xJh4WsfXrxERa9uGVbxon3x6gRHWTj33JcZASmt9Q3");
+      expect(result?.data?.systemManagerAccount.toBase58()).toBe('CXzddeiDgbTTxNnd1apeUGE7E1UAdvBoysf7c271AA79');
+      expect(result?.data?.admin.toBase58()).toBe('GmZ8FxsXA1UtEJFidZPMkjY6LpYf1ivNR4AupxmiAfwx');
+      expect(result?.data?.referrerResetIntervalSeconds).toBe(86400);
+      expect(result?.data?.updateMetadataFee).toBe(0.1);
+      expect(result?.data?.customizedDeployFee).toBe(10);
+      expect(result?.data?.initPoolWsolAmount).toBe(0.25);
+      expect(result?.data?.graduateFeeRate).toBe(5);
+      expect(result?.data?.minGraduateFee).toBe(5);
+      expect(result?.data?.raydiumCpmmCreateFee).toBe(0.15);
     });
   });
 });

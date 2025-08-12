@@ -103,7 +103,6 @@ export interface LaunchTokenOptions {
 }
 
 export interface LaunchTokenResponse {
-  success: boolean;
   transactionHash: string;
   mintAddress: PublicKey;
   configAddress: PublicKey;
@@ -185,13 +184,9 @@ export interface MintTokenOptions {
   lookupTableAccount?: PublicKey;
 }
 export interface MintTokenResponse {
-  success: boolean;
-  message?: string;
-  data?: {
-    tx: string;
-    owner: PublicKey;
-    tokenAccount: PublicKey;
-  };
+  tx: string;
+  owner: PublicKey;
+  tokenAccount: PublicKey;
 }
 
 export interface InitSystemConfigOptions {
@@ -200,7 +195,6 @@ export interface InitSystemConfigOptions {
 }
 
 export interface InitSystemConfigResponse {
-  success: boolean;
   lookupTableAddress: PublicKey;
   systemConfigAddress: PublicKey;
   systemManager: PublicKey;
@@ -227,10 +221,8 @@ export interface GenerateMetadataUriOptions {
 }
 
 export interface MetadataUploadResponse {
-  success: boolean;
   metadataUrl?: string;
   imageUrl?: string;
-  error?: string;
 }
 
 export interface MetadataParams {

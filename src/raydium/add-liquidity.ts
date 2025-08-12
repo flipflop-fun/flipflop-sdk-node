@@ -10,30 +10,45 @@ import BN from "bn.js";
 import { getPoolInfoByRpc } from "./display-pool";
 import { compareMints } from "../utils";
 import { AUTH_SEED } from "../constants";
-import { AddLiquidityOptions, AddLiquidityResponse, DisplayPoolResponse } from "./types";
+import { AddLiquidityOptions, AddLiquidityResponse, DisplayPoolResponse, ApiResponse } from "./types";
 
 export const addLiquidity = async (
   options: AddLiquidityOptions
-): Promise<AddLiquidityResponse> => {
+): Promise<ApiResponse<AddLiquidityResponse>> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error("Missing rpc parameter");
+    return {
+      success: false,
+      message: "Missing rpc parameter",
+    }
   }
 
   if (!options.mint) {
-    throw new Error("Missing mint parameter");
+    return {
+      success: false,
+      message: "Missing mint parameter",
+    }
   }
 
   if (!options.tokenAmount || options.tokenAmount <= 0) {
-    throw new Error("Invalid tokenAmount parameter");
+    return {
+      success: false,
+      message: "Invalid tokenAmount parameter",
+    }
   }
 
   if (options.slippage === undefined || options.slippage < 0) {
-    throw new Error("Invalid slippage parameter");
+    return {
+      success: false,
+      message: "Invalid slippage parameter",
+    }
   }
 
   if (!options.payer) {
-    throw new Error("Missing provider parameter");
+    return {
+      success: false,
+      message: "Missing provider parameter",
+    }
   }
 
   const connection = new Connection(options.rpc, "confirmed");
@@ -61,7 +76,10 @@ export const addLiquidity = async (
     );
 
     if (tokenAccounts.value.length === 0) {
-      throw new Error(`No token account found for mint ${options.mint}`);
+      return {
+        success: false,
+        message: `No token account found for mint ${options.mint}`,
+      }
     }
 
     // Get token info using Raydium API
@@ -69,7 +87,10 @@ export const addLiquidity = async (
     const solInfo = await raydium.token.getTokenInfo(NATIVE_MINT);
 
     if (!tokenInfo || !solInfo) {
-      throw new Error("Failed to get token information");
+      return {
+        success: false,
+        message: "Failed to get token information",
+      }
     }
 
     // Parse token account data
@@ -82,9 +103,10 @@ export const addLiquidity = async (
       .toNumber();
 
     if (availableTokenBalance < options.tokenAmount) {
-      throw new Error(
-        `Insufficient token balance. Available: ${availableTokenBalance}, Required: ${options.tokenAmount}`
-      );
+      return {
+        success: false,
+        message: `Insufficient token balance. Available: ${availableTokenBalance}, Required: ${options.tokenAmount}`,
+      }
     }
 
     // Fallback to mint-based discovery using API
@@ -97,14 +119,25 @@ export const addLiquidity = async (
     );
 
     if (!poolInfo) {
-      throw new Error(`No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`);
+      return {
+        success: false,
+        message: `No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`,
+      }
     }
 
+    if (!poolInfo.success) {
+      return {
+        success: false,
+        message: poolInfo.message || "Unknown error",
+      }
+    }
+
+    const poolInfoData = poolInfo.data as DisplayPoolResponse;
     // Calculate required SOL amount based on pool ratio
     const tokenAmountBN = new BN(options.tokenAmount).mul(new BN(10).pow(new BN(tokenInfo.decimals)));
     // Ensure we have valid reserve values
-    const mintAmountA = String(poolInfo.baseReserve || "0");
-    const mintAmountB = String(poolInfo.quoteReserve || "0");
+    const mintAmountA = String(poolInfoData.baseReserve || "0");
+    const mintAmountB = String(poolInfoData.quoteReserve || "0");
 
     const cleanMintAmountA = mintAmountA.replace(/[^0-9]/g, '') || "1000000000";
     const cleanMintAmountB = mintAmountB.replace(/[^0-9]/g, '') || "1000000000";
@@ -115,7 +148,7 @@ export const addLiquidity = async (
     
     const tokenMint = new PublicKey(options.mint);
     
-    if (poolInfo.mintA.equals(tokenMint)) {
+    if (poolInfoData.mintA.equals(tokenMint)) {
       tokenReserve = new BN(cleanMintAmountA);
       solReserve = new BN(cleanMintAmountB);
     } else {
@@ -125,7 +158,10 @@ export const addLiquidity = async (
 
     // Handle zero reserves
     if (tokenReserve.isZero()) {
-      throw new Error("Cannot calculate SOL amount: token reserve is zero");
+      return {
+        success: false,
+        message: "Cannot calculate SOL amount: token reserve is zero",
+      }
     }
 
     // Calculate required SOL amount
@@ -137,18 +173,19 @@ export const addLiquidity = async (
     // console.log("Required SOL:", requiredSolAmount);
 
     if (solBalance < requiredSolAmountBN.toNumber()) {
-      throw new Error(
-        `Insufficient SOL balance. Available: ${
+      return {
+        success: false,
+        message: `Insufficient SOL balance. Available: ${
           solBalance / 1e9
-        }, Required: ${requiredSolAmountBN.toNumber() / 1e9}`
-      );
+        }, Required: ${requiredSolAmountBN.toNumber() / 1e9}`,
+      }
     }
 
     // Create slippage percentage
     const slippagePercent = new Percent(options.slippage, 100);
     const result = await doAddLiquidityInstruction(
       connection,
-      poolInfo,
+      poolInfoData,
       new PublicKey(options.mint),
       requiredSolAmountBN,
       tokenAmountBN,
@@ -156,14 +193,17 @@ export const addLiquidity = async (
       slippagePercent,
     );
 
-    return result;
+    return {
+      success: true,
+      data: result,
+    };
   } catch (error) {
-    console.error("Add liquidity error:", error);
-    throw new Error(
-      `Failed to add liquidity: ${
+    return {
+      success: false,
+      message: `Failed to add liquidity: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    }
   }
 };
 

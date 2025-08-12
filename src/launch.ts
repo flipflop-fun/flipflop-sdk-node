@@ -21,26 +21,39 @@ import {
   LaunchTokenResponse,
   TokenMetadata,
 } from "./types";
+import { ApiResponse } from "./raydium/types";
 
 // Launch token function
 export const launchToken = async (
   options: LaunchTokenOptions
-): Promise<LaunchTokenResponse> => {
+): Promise<ApiResponse<LaunchTokenResponse>> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error("Missing rpc parameter");
+    return {
+      success: false,
+      message: "Missing rpc parameter",
+    };
   }
 
   if (!options.tokenType) {
-    throw new Error("Missing token-type parameter");
+    return {
+      success: false,
+      message: "Missing token-type parameter",
+    };
   }
 
   if (!options.creator) {
-    throw new Error("Missing creator parameter");
+    return {
+      success: false,
+      message: "Missing creator parameter",
+    };
   }
 
   if (!options.name || !options.symbol) {
-    throw new Error("Missing name or symbol parameter");
+    return {
+      success: false,
+      message: "Missing name or symbol parameter",
+    };
   }
 
   const type = options.tokenType;
@@ -116,7 +129,10 @@ export const launchToken = async (
 
     const info = await provider.connection.getAccountInfo(mintAccount);
     if (info) {
-      throw new Error(`Token already exists: ${mintAccount.toBase58()}`);
+      return {
+        success: false,
+        message: `Token already exists: ${mintAccount.toBase58()}`,
+      };
     }
 
     const mintTokenVaultAta = await getAssociatedTokenAddress(
@@ -172,17 +188,20 @@ export const launchToken = async (
     // Return structured data instead of console output
     return {
       success: true,
-      transactionHash: tx,
-      mintAddress: mintAccount,
-      configAddress: configAccount,
-      metadata: metadata,
-      configuration: configData,
+      data: {
+        transactionHash: tx,
+        mintAddress: mintAccount,
+        configAddress: configAccount,
+        metadata: metadata,
+        configuration: configData,
+      }
     };
   } catch (error) {
-    throw new Error(
-      `Failed to launch token: ${
+    return {
+      success: false,
+      message: `Failed to launch token: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    };
   }
 };

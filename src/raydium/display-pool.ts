@@ -5,8 +5,7 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import { getNetworkType, CONFIGS } from "../config";
 import { compareMints, getPoolAddress } from "../utils";
-import BN from "bn.js";
-import { DisplayPoolOptions, DisplayPoolResponse } from "./types";
+import { ApiResponse, DisplayPoolOptions, DisplayPoolResponse } from "./types";
 
 export const getPoolInfoByRpc = async (
   connection: Connection,
@@ -14,7 +13,7 @@ export const getPoolInfoByRpc = async (
   tokenAMint: PublicKey,
   tokenBMint: PublicKey,
   rpc: string
-): Promise<DisplayPoolResponse | null> => {
+): Promise<ApiResponse<DisplayPoolResponse> | null> => {
   try {
     const networkType = getNetworkType(rpc);
     const config = CONFIGS[networkType];
@@ -30,9 +29,10 @@ export const getPoolInfoByRpc = async (
 
     const poolAccountInfo = await connection.getAccountInfo(poolAddress);
     if (!poolAccountInfo) {
-      throw new Error(
-        `Pool account does not exist at address ${poolAddress.toBase58()}`
-      );
+      return {
+        success: false,
+        message: `Pool account does not exist at address ${poolAddress.toBase58()}`,
+      };
     }
     const cpmmPoolInfo = CpmmPoolInfoLayout.decode(poolAccountInfo!.data);
 
@@ -44,9 +44,10 @@ export const getPoolInfoByRpc = async (
       !rpcPoolInfos ||
       (Array.isArray(rpcPoolInfos) && rpcPoolInfos.length === 0)
     ) {
-      throw new Error(
-        `Could not fetch pool info from RPC for address ${poolAddress.toBase58()}`
-      );
+      return {
+        success: false,
+        message: `Could not fetch pool info from RPC for address ${poolAddress.toBase58()}`,
+      };
     }
 
     const rpcPoolInfo = (
@@ -62,17 +63,22 @@ export const getPoolInfoByRpc = async (
       programId,
     };
   } catch (error) {
-    console.error("Error getting pool info by RPC:", error);
-    return null;
+    return {
+      success: false,
+      message: `Error getting pool info by RPC: ${(error as any).message}`,
+    };
   }
 };
 
 export async function displayPool(
   options: DisplayPoolOptions
-): Promise<DisplayPoolResponse | null> {
+): Promise<ApiResponse<DisplayPoolResponse> | null> {
   // Validate inputs
   if (!options.tokenAMint || !options.tokenBMint) {
-    throw new Error("Token mints are required");
+    return {
+      success: false,
+      message: "Token mints are required",
+    };
   }
   const connection = options.connection;
   const networkType = getNetworkType(connection.rpcEndpoint);
@@ -93,7 +99,9 @@ export async function displayPool(
       connection.rpcEndpoint
     );
   } catch (error) {
-    console.error("Error displaying pool info:", error);
-    return null;
+    return {
+      success: false,
+      message: `Error displaying pool info: ${(error as any).message}`,
+    };
   }
 }

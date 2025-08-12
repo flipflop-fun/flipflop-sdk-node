@@ -20,33 +20,51 @@ import {
 import { CONFIGS, getNetworkType } from "../config";
 import BN from "bn.js";
 import { compareMints } from "../utils";
-import { CreatePoolOptions, CreatePoolResponse } from "./types";
+import { ApiResponse, CreatePoolOptions, CreatePoolResponse } from "./types";
 
 export const createPool = async (
   options: CreatePoolOptions,
-): Promise<CreatePoolResponse> => {
+): Promise<ApiResponse<CreatePoolResponse>> => {
   if (!options.rpc) {
-    throw new Error("Missing rpc parameter");
+    return {
+      success: false,
+      message: 'RPC url not provided',
+    };
   }
 
   if (!options.mintA || !options.mintB) {
-    throw new Error("Missing mintA or mintB parameter");
+    return {
+      success: false,
+      message: 'Mint A or Mint B not provided',
+    };
   }
 
   if (options.mintA === options.mintB) {
-    throw new Error("mintA and mintB cannot be the same");
+    return {
+      success: false,
+      message: 'Mint A and Mint B cannot be the same',
+    };
   }
 
   if (!options.amountA || options.amountA <= 0) {
-    throw new Error("Invalid amountA parameter");
+    return {
+      success: false,
+      message: 'Invalid amountA parameter',
+    };
   }
 
   if (!options.amountB || options.amountB <= 0) {
-    throw new Error("Invalid amountB parameter");
+    return {
+      success: false,
+      message: 'Invalid amountB parameter',
+    };
   }
 
   if (!options.creator) {
-    throw new Error("Missing creator parameter");
+    return {
+      success: false,
+      message: 'Missing creator parameter',
+    };
   }
 
   const connection = new Connection(options.rpc, "confirmed");
@@ -68,7 +86,10 @@ export const createPool = async (
     const tokenAInfo = await raydium.token.getTokenInfo(options.mintA);
     const tokenBInfo = await raydium.token.getTokenInfo(options.mintB);
     if (!tokenAInfo || !tokenBInfo) {
-      throw new Error("Failed to get token information for one or both tokens");
+      return {
+        success: false,
+        message: 'Failed to get token information for one or both tokens',
+      };
     }
 
     // Calculate amounts in smallest units
@@ -179,24 +200,31 @@ export const createPool = async (
       });
 
       return {
-        signature: String(txId),
-        poolAddress: extInfo.address.poolId,
-        mintA: mint0,
-        mintB: mint1,
-        amountA: finalAmountA,
-        amountB: finalAmountB,
-        creator: options.creator.publicKey,
+        success: true,
+        data: {
+          signature: String(txId),
+          poolAddress: extInfo.address.poolId,
+          mintA: mint0,
+          mintB: mint1,
+          amountA: finalAmountA,
+          amountB: finalAmountB,
+          creator: options.creator.publicKey,
+        }
       };
     } catch (error) {
-      console.error("Pool creation transaction error:", error);
-      throw error;
+      return {
+        success: false,
+        message: `Failed to create pool with transaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      }
     }
   } catch (error) {
-    console.error("Create pool SDK error:", error);
-    throw new Error(
-      `Failed to create pool with SDK: ${
+    return {
+      success: false,
+      message: `Failed to create pool with SDK: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    };
   }
 };

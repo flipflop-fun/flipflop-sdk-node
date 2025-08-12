@@ -18,10 +18,10 @@ describe('display LP', () => {
       // Act
       const result = await displayLP(displayLpOptions);
       // console.log('Display LP result:', result);
-      console.log('LP token balance:', result?.lpTokenBalance.toString());
-      console.log('Share of pool:', result?.shareOfPool);
-      console.log('Token A amount:', result?.tokenAAmount.toString());
-      console.log('Token B amount:', result?.tokenBAmount.toString());
+      console.log('LP token balance:', result?.data?.lpTokenBalance.toString());
+      console.log('Share of pool:', result?.data?.shareOfPool);
+      console.log('Token A amount:', result?.data?.tokenAAmount.toString());
+      console.log('Token B amount:', result?.data?.tokenBAmount.toString());
     }, 30000); // 30 second timeout
   });
 });

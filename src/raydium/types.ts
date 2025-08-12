@@ -136,9 +136,7 @@ export interface RemoveLiquidityOptions {
 }
 
 export interface RemoveLiquidityResponse {
-  success: boolean;
   signature?: string;
-  error?: string;
   tokenAAmount?: BN;
   tokenBAmount?: BN;
 }
@@ -159,3 +157,8 @@ export interface SellTokenResponse {
   txId: string;
 }
 
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}

@@ -9,8 +9,6 @@ import {
   Transaction,
   AddressLookupTableProgram,
   sendAndConfirmTransaction,
-  SystemProgram,
-  LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import fs from "fs";
 import bs58 from "bs58";
@@ -57,6 +55,7 @@ import {
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 import { CONFIGS, getNetworkType } from "./config";
 import sleep from "sleep-promise";
+import { ApiResponse } from "./raydium/types";
 
 export const initProvider = async (
   rpc: Connection,
@@ -250,7 +249,7 @@ export const parseConfigData = async (
           graduateEpoch: configData.mintStateData.graduateEpoch,
         });
       } catch (error) {
-        console.log(error);
+        console.error(error);
         reject(error);
       }
     });
@@ -395,7 +394,7 @@ export const mintBy = async (
   connection: Connection,
   lookupTableAddress: PublicKey,
   protocolFeeAccount: PublicKey
-): Promise<MintTokenResponse> => {
+): Promise<ApiResponse<MintTokenResponse>> => {
   // check balance SOL
   let balance = await getSolanaBalance(connection, account.publicKey);
   if (balance == 0) {
@@ -694,6 +693,12 @@ export const mintBy = async (
 
     // Create versioned transaction with LUT
     const accountInfo = await connection.getAccountInfo(lookupTableAddress);
+    if (!accountInfo) {
+      return {
+        success: false,
+        message: "Lookup table account not found",
+      }
+    }
     const lookupTable = new AddressLookupTableAccount({
       key: lookupTableAddress,
       state: AddressLookupTableAccount.deserialize(accountInfo!.data),
@@ -723,7 +728,6 @@ export const mintBy = async (
       },
     };
   } catch (e) {
-    console.log(e);
     return {
       success: false,
       message: `Mint failed: ${

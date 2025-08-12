@@ -23,7 +23,7 @@ describe('remove liquidity', () => {
       // Assert
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.signature).toBeDefined();
+      expect(result.data?.signature).toBeDefined();
     }, 30000); // 30 second timeout
   });
 });

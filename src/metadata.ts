@@ -19,6 +19,7 @@ import {
   MetadataUploadResponse,
   NetworkConfig,
 } from "./types";
+import { ApiResponse } from "./raydium/types";
 
 // Constants based on frontend configuration
 const VALID_IMAGE_TYPES = [
@@ -216,7 +217,7 @@ const createAndUploadMetadata = async (
  */
 const generateMetadataUri = async (
   options: GenerateMetadataUriOptions
-): Promise<MetadataUploadResponse> => {
+): Promise<ApiResponse<MetadataUploadResponse>> => {
   try {
     const config = CONFIGS[getNetworkType(options.rpc)];
     // Step 1: Validate image file
@@ -225,7 +226,7 @@ const generateMetadataUri = async (
     if (!validation.valid) {
       return {
         success: false,
-        error: validation.error,
+        message: validation.error,
       };
     }
 
@@ -249,14 +250,16 @@ const generateMetadataUri = async (
 
     return {
       success: true,
-      metadataUrl,
-      imageUrl,
+      data: {
+        imageUrl,
+        metadataUrl,
+      }
     };
   } catch (error) {
     console.error("Error generating metadata URI:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      message: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 };

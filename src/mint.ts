@@ -14,25 +14,38 @@ import {
 } from "./utils";
 import { CONFIGS, getNetworkType } from "./config";
 import { MintTokenOptions, MintTokenResponse } from "./types";
+import { ApiResponse } from "./raydium/types";
 
 export const mintToken = async (
   options: MintTokenOptions
-): Promise<MintTokenResponse> => {
+): Promise<ApiResponse<MintTokenResponse>> => {
   try {
     if (!options.rpc) {
-      throw new Error("Missing rpc parameter");
+      return {
+        success: false,
+        message: "Missing rpc parameter",
+      };
     }
 
     if (!options.minter) {
-      throw new Error("Missing minter parameter");
+      return {
+        success: false,
+        message: "Missing minter parameter",
+      };
     }
 
     if (!options.mint) {
-      throw new Error("Missing mint parameter");
+      return {
+        success: false,
+        message: "Missing mint parameter",
+      };
     }
 
     if (!options.urc) {
-      throw new Error("Missing urc parameter");
+      return {
+        success: false,
+        message: "Missing urc parameter",
+      };
     }
 
     const rpc = new Connection(options.rpc);
@@ -80,13 +93,16 @@ export const mintToken = async (
 
     const metadataData = await getMetadataByMint(rpc, mintAccount);
     if (!metadataData.success) {
-      throw new Error(`Failed to get token metadata: ${metadataData.message}`);
+      return {
+        success: false,
+        message: `Failed to get token metadata: ${metadataData.message}`,
+      };
     }
 
     const _name = cleanTokenName(metadataData.data.name);
     const _symbol = cleanTokenName(metadataData.data.symbol);
 
-    const result = await mintBy(
+    return await mintBy(
       provider,
       program,
       mintAccount,
@@ -103,17 +119,12 @@ export const mintToken = async (
         : new PublicKey(config.lookupTableAccount),
       protocolFeeAccount
     );
-    // Ensure tx is always a string in the response
-    return {
-      success: result.success,
-      message: result.message,
-      data: result.data ? result.data : undefined,
-    };
   } catch (error) {
-    throw new Error(
-      `Mint operation failed: ${
+    return {
+      success: false,
+      message: `Mint operation failed: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    };
   }
 };

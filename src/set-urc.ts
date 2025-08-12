@@ -20,25 +20,38 @@ import {
 } from "@solana/spl-token";
 import { CONFIGS, getNetworkType } from "./config";
 import { SetUrcOptions, SetUrcResponse } from "./types";
+import { ApiResponse } from "./raydium/types";
 
 export const setUrc = async (
   options: SetUrcOptions
-): Promise<SetUrcResponse> => {
+): Promise<ApiResponse<SetUrcResponse>> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error("Missing rpc parameter");
+    return {
+      success: false,
+      message: "Missing rpc parameter",
+    };
   }
 
   if (!options.urc) {
-    throw new Error("Missing urc parameter");
+    return {
+      success: false,
+      message: "Missing urc parameter",
+    };
   }
 
   if (!options.mint) {
-    throw new Error("Missing mint parameter");
+    return {
+      success: false,
+      message: "Missing mint parameter",
+    };
   }
 
   if (!options.refAccount) {
-    throw new Error("Missing ref-account parameter");
+    return {
+      success: false,
+      message: "Missing ref-account parameter",
+    };
   }
 
   const rpc = new Connection(options.rpc, "confirmed");
@@ -99,9 +112,10 @@ export const setUrc = async (
         codeAccountData.referralAccount.toBase58() !==
         referralAccount.toBase58()
       ) {
-        throw new Error(
-          "❌ Error: Referral code is already assigned to another account"
-        );
+        return {
+          success: false,
+          message: "❌ Error: Referral code is already assigned to another account",
+        };
       }
     }
 
@@ -129,7 +143,10 @@ export const setUrc = async (
     };
     const tokenMetadata = await getMetadataByMint(rpc, mintAccount);
     if (!tokenMetadata.success) {
-      throw new Error(`Failed to get token metadata: ${tokenMetadata.message}`);
+      return {
+        success: false,
+        message: `Failed to get token metadata: ${tokenMetadata.message}`,
+      };
     }
 
     const _name = cleanTokenName(tokenMetadata.data.name);
@@ -159,20 +176,24 @@ export const setUrc = async (
 
     // Return structured data instead of console output
     return {
-      transactionHash: tx,
-      urc: urc,
-      mint: mintAccount,
-      referrer: refAccount.publicKey,
-      referrerTokenAccount: data.referrerAta,
-      codeHash: data.codeHash,
-      usageCount: data.usageCount,
-      activatedAt: data.activeTimestamp.toNumber(),
+      success: true,
+      data: {
+        transactionHash: tx,
+        urc: urc,
+        mint: mintAccount,
+        referrer: refAccount.publicKey,
+        referrerTokenAccount: data.referrerAta,
+        codeHash: data.codeHash,
+        usageCount: data.usageCount,
+        activatedAt: data.activeTimestamp.toNumber(),
+      },
     };
   } catch (error) {
-    throw new Error(
-      `Failed to set URC: ${
+    return {
+      success: false,
+      message: `Failed to set URC: ${
         error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+      }`,
+    };
   }
 };

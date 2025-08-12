@@ -1,4 +1,5 @@
 import { TOKEN_PARAMS } from "./constants";
+import { ApiResponse } from "./raydium/types";
 import { TokenParams } from "./types";
 
 // Define the options interface
@@ -10,13 +11,19 @@ interface DisplayTokenParamOptions {
 // Main function to display token parameters
 export const displayTokenParams = (
   options: DisplayTokenParamOptions
-): TokenParams => {
+): ApiResponse<TokenParams> => {
   if (!options.rpc) {
-    throw new Error("Missing --rpc parameter");
+    return {
+      success: false,
+      message: "Missing --rpc parameter",
+    };
   }
 
   if (!options.tokenType) {
-    throw new Error("Missing --token-type parameter");
+    return {
+      success: false,
+      message: "Missing --token-type parameter",
+    };
   }
 
   const params = TOKEN_PARAMS[options.tokenType];
@@ -29,5 +36,8 @@ export const displayTokenParams = (
     );
   }
 
-  return params;
+  return {
+    success: true,
+    data: params,
+  };
 };

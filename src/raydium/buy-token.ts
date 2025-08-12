@@ -22,25 +22,35 @@ import { getPoolInfoByRpc } from './display-pool';
 import { CONFIGS, getNetworkType } from '../config';
 import { Raydium, getPdaObservationId, makeSwapCpmmBaseOutInstruction } from '@raydium-io/raydium-sdk-v2';
 import { AUTH_SEED } from '../constants';
-import { BuyTokenOptions, BuyTokenResponse } from './types';
+import { ApiResponse, BuyTokenOptions, BuyTokenResponse, DisplayPoolResponse } from './types';
 
 export async function buyToken(
   options: BuyTokenOptions,
-): Promise<BuyTokenResponse> {
+): Promise<ApiResponse<BuyTokenResponse>> {
   if (!options.rpc) {
-    throw new Error('RPC url not provided');
+    return {
+      success: false,
+      message: 'RPC url not provided',
+    };
   }
   if (!options.mint) {
-    throw new Error('Token mint not provided');
+    return {
+      success: false,
+      message: 'Token mint not provided',
+    };
   }
   if (!options.amount) {
-    throw new Error('Token amount not provided');
+    return {
+      success: false,
+      message: 'Token amount not provided',
+    };
   }
-  // if (!options.maxSolAmount) {
-  //   throw new Error('Max SOL amount not provided');
-  // }
+
   if (!options.payer) {
-    throw new Error('Payer not provided');
+    return {
+      success: false,
+      message: 'Payer not provided',
+    };
   }
   
   try {
@@ -66,14 +76,25 @@ export async function buyToken(
       options.rpc,
     );
     if (!poolInfo) {
-      throw new Error(`No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`);
+      return {
+        success: false,
+        message: `No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`,
+      };
+    }
+    if (!poolInfo.success) {
+      return {
+        success: false,
+        message: poolInfo.message || "Unknown error",
+      }
     }
 
-    const isToken0Sol = poolInfo.mintA.equals(NATIVE_MINT);
+    const poolInfoData = poolInfo.data as DisplayPoolResponse;
+
+    const isToken0Sol = poolInfoData.mintA.equals(NATIVE_MINT);
     const inputMint = NATIVE_MINT;  // 输入是SOL
     const outputMint = new PublicKey(options.mint);  // 输出是目标代币
-    const inputVault = isToken0Sol ? poolInfo.vaultA : poolInfo.vaultB;  // SOL的vault
-    const outputVault = isToken0Sol ? poolInfo.vaultB : poolInfo.vaultA;  // 代币的vault
+    const inputVault = isToken0Sol ? poolInfoData.vaultA : poolInfoData.vaultB;  // SOL的vault
+    const outputVault = isToken0Sol ? poolInfoData.vaultB : poolInfoData.vaultA;  // 代币的vault
     
     // 获取代币信息以确定小数位数
     const outputTokenInfo = await raydium.token.getTokenInfo(options.mint);
@@ -82,8 +103,8 @@ export async function buyToken(
     // 使用BN直接计算，避免精度丢失
     const amountOut = new BN(options.amount).mul(new BN(LAMPORTS_PER_SOL));
     // const maxAmountIn = new BN(options.maxSolAmount).mul(new BN(LAMPORTS_PER_SOL)); // SOL 有 9 位小数
-    const solReserve = isToken0Sol ? new BN(poolInfo.baseReserve) : new BN(poolInfo.quoteReserve);
-    const tokenReserve = isToken0Sol ? new BN(poolInfo.quoteReserve) : new BN(poolInfo.baseReserve);
+    const solReserve = isToken0Sol ? new BN(poolInfoData.baseReserve) : new BN(poolInfoData.quoteReserve);
+    const tokenReserve = isToken0Sol ? new BN(poolInfoData.quoteReserve) : new BN(poolInfoData.baseReserve);
 
     const amountInRequired = amountOut.mul(solReserve).div(tokenReserve.sub(amountOut));
 
@@ -97,7 +118,7 @@ export async function buyToken(
     // console.log('wsol account', payerOutputTokenAccount.toBase58());
     const [authority] = PublicKey.findProgramAddressSync(
       [Buffer.from(AUTH_SEED)],
-      new PublicKey(poolInfo.programId)
+      new PublicKey(poolInfoData.programId)
     );
 
     const instructions = [];
@@ -127,9 +148,10 @@ export async function buyToken(
         const requiredSolForTx = additionalSolNeeded.add(new BN(5000)); // 预留交易费用
         
         if (solBalance < requiredSolForTx.toNumber()) {
-          throw new Error(
-            `Insufficient SOL balance. Available: ${solBalance / LAMPORTS_PER_SOL} SOL, Required: ${requiredSolForTx.toNumber() / LAMPORTS_PER_SOL} SOL`
-          );
+          return {
+            success: false,
+            message: `Insufficient SOL balance. Available: ${solBalance / LAMPORTS_PER_SOL} SOL, Required: ${requiredSolForTx.toNumber() / LAMPORTS_PER_SOL} SOL`,
+          };
         }
         
         // 添加包装 SOL 的指令
@@ -150,9 +172,10 @@ export async function buyToken(
         const requiredSolForTx = maxAmountIn.add(new BN(5000)); // 预留交易费用
         
         if (solBalance < requiredSolForTx.toNumber()) {
-          throw new Error(
-            `Insufficient SOL balance. Available: ${solBalance / LAMPORTS_PER_SOL} SOL, Required: ${requiredSolForTx.toNumber() / LAMPORTS_PER_SOL} SOL`
-          );
+          return {
+            success: false,
+            message: `Insufficient SOL balance. Available: ${solBalance / LAMPORTS_PER_SOL} SOL, Required: ${requiredSolForTx.toNumber() / LAMPORTS_PER_SOL} SOL`,
+          };
         }
         
         instructions.push(
@@ -173,7 +196,10 @@ export async function buyToken(
           createSyncNativeInstruction(payerInputTokenAccount)
         );
       } else {
-        throw error;
+        return {
+          success: false,
+          message: `Error checking WSOL account: ${(error as any).message}`,
+        }
       }
     }
     instructions.push(
@@ -182,11 +208,11 @@ export async function buyToken(
     );
 
     const swapInstruction = makeSwapCpmmBaseOutInstruction(
-      new PublicKey(poolInfo.programId),  // programId
+      new PublicKey(poolInfoData.programId),  // programId
       payer.publicKey,                    // payer
       authority,                          // authority
       new PublicKey(config.cpSwapConfigAddress),  // configId
-      poolInfo.poolAddress,               // poolId
+      poolInfoData.poolAddress,               // poolId
       payerInputTokenAccount,             // inputTokenAccount
       payerOutputTokenAccount,            // outputTokenAccount
       inputVault,                         // inputVault
@@ -195,7 +221,7 @@ export async function buyToken(
       TOKEN_PROGRAM_ID,                   // outputTokenProgramId
       inputMint,                          // inputMint
       outputMint,                         // outputMint
-      getPdaObservationId(new PublicKey(poolInfo.programId), new PublicKey(poolInfo.poolAddress)).publicKey,
+      getPdaObservationId(new PublicKey(poolInfoData.programId), new PublicKey(poolInfoData.poolAddress)).publicKey,
       maxAmountIn,
       amountOut,
     );
@@ -251,17 +277,26 @@ export async function buyToken(
         await connection.confirmTransaction(closeSig, 'confirmed');
       }
     } catch (error) {
-      console.error('Error while unwrap WSOL:', error);
+      return {
+        success: false,
+        message: `Error while unwrap WSOL: ${(error as any).message}`,
+      }
     }
 
     return {
-      mintAddress: new PublicKey(options.mint),
-      solAmount: maxAmountIn.div(new BN(LAMPORTS_PER_SOL)).toNumber(),
-      tokenAmount: options.amount,
-      poolAddress: poolInfo.poolAddress,
-      txId: sig,
+      success: true,
+      data: {
+        mintAddress: new PublicKey(options.mint),
+        solAmount: maxAmountIn.div(new BN(LAMPORTS_PER_SOL)).toNumber(),
+        tokenAmount: options.amount,
+        poolAddress: poolInfoData.poolAddress,
+        txId: sig,
+      }
     }
   } catch (error: any) {
-    throw new Error(error.message);
+    return {
+      success: false,
+      message: error.message,
+    }
   }
 }

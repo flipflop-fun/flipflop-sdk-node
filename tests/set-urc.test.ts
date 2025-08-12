@@ -2,6 +2,7 @@ import { describe, it } from '@jest/globals';
 import { setUrc } from '../src/set-urc';
 import { loadKeypairFromBase58 } from '../src/utils';
 import { PublicKey } from '@solana/web3.js';
+import { OPERATOR_KEYPAIR } from './raydium/config';
 
 describe('set urc', () => {
   describe('successful set urc', () => {
@@ -19,8 +20,8 @@ describe('set urc', () => {
       console.log(result);
       // Assert
       expect(result).toBeDefined();
-      expect(result?.urc).toBe(setUrcOptions.urc);
-      expect(result?.usageCount).toBe(0);
+      expect(result?.data?.urc).toBe(setUrcOptions.urc);
+      expect(result?.data?.usageCount).toBe(0);
     });
   });
 });

@@ -10,11 +10,11 @@ import { getPoolInfoByRpc } from "./display-pool";
 import { CONFIGS, getNetworkType } from "../config";
 import { compareMints } from "../utils";
 import { AUTH_SEED } from "../constants";
-import { DisplayPoolResponse, RemoveLiquidityOptions, RemoveLiquidityResponse } from "./types";
+import { ApiResponse, DisplayPoolResponse, RemoveLiquidityOptions, RemoveLiquidityResponse } from "./types";
 
 export async function removeLiquidity(
   options: RemoveLiquidityOptions
-): Promise<RemoveLiquidityResponse> {
+): Promise<ApiResponse<RemoveLiquidityResponse>> {
   try {
     const {
       rpc,
@@ -25,7 +25,10 @@ export async function removeLiquidity(
 
     // Validate inputs
     if (!mint) {
-      throw new Error("Token mints are required");
+      return {
+        success: false,
+        message: "Token mints are required",
+      };
     }
   
     const connection = new Connection(options.rpc, "confirmed");
@@ -51,21 +54,43 @@ export async function removeLiquidity(
     );
 
     if (!poolInfo) {
-      throw new Error(`No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`);
+      return {
+        success: false,
+        message: `No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`,
+      };
     }
 
+    if (!poolInfo.success) {
+      return {
+        success: false,
+        message: poolInfo.message || "Unknown error",
+      };
+    }
+
+    const poolInfoData = poolInfo.data as DisplayPoolResponse;
+
     // Get LP token amount
-    const lpTokenMint = new PublicKey(poolInfo.mintLp);
+    const lpTokenMint = new PublicKey(poolInfoData.mintLp);
     const lpTokenInfo = await connection.getAccountInfo(lpTokenMint);
     if (!lpTokenInfo) {
-      throw new Error("Failed to get LP token information");
+      return {
+        success: false,
+        message: "Failed to get LP token information",
+      };
     }
 
     const lpToken = await getLpTokenAmount(connection, payer.publicKey, lpTokenMint);
-    const lpTokenAmount = lpToken.amount.mul(new BN(options.removePercentage)).div(new BN(100));
+    if (!lpToken.success || !lpToken.data) {
+      return {
+        success: false,
+        message: lpToken.message || "Unknown error",
+      };
+    }
+
+    const lpTokenAmount = lpToken.data.amount.mul(new BN(options.removePercentage)).div(new BN(100));
     const result = await doRemoveLiquidityInstruction(
       connection,
-      poolInfo,
+      poolInfoData,
       lpTokenAmount,
       payer,
       new Percent(slippage, 100)
@@ -76,15 +101,16 @@ export async function removeLiquidity(
 
     return {
       success: true,
-      signature: result.signature,
-      tokenAAmount: result.tokenAAmount,
-      tokenBAmount: result.tokenBAmount,
+      data: {
+        signature: result.signature,
+        tokenAAmount: result.tokenAAmount,
+        tokenBAmount: result.tokenBAmount,
+      }
     };
   } catch (error) {
-    console.error("Error removing liquidity:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      message: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -197,7 +223,10 @@ export const getLpTokenAmount = async (
 ) => {
   const lpTokenInfo = await connection.getAccountInfo(lpTokenMint);
   if (!lpTokenInfo) {
-    throw new Error("Failed to get LP token information");
+    return {
+      success: false,
+      message: "Failed to get LP token information",
+    };
   }
 
   // 获取用户的LP代币账户地址
@@ -209,7 +238,10 @@ export const getLpTokenAmount = async (
   // 获取用户LP代币账户信息
   const userLpAccountInfo = await connection.getAccountInfo(userLpTokenAccount);
   if (!userLpAccountInfo) {
-    throw new Error("User does not have LP tokens for this pool");
+    return {
+      success: false,
+      message: "User does not have LP tokens for this pool",
+    };
   }
 
   // 解析LP代币余额
@@ -219,16 +251,25 @@ export const getLpTokenAmount = async (
   // 获取LP代币的小数位数
   const lpMintAccountInfo = await connection.getAccountInfo(lpTokenMint);
   if (!lpMintAccountInfo) {
-    throw new Error("Failed to get LP mint information");
+    return {
+      success: false,
+      message: "Failed to get LP mint information",
+    };
   }
   const lpMintData = MintLayout.decode(lpMintAccountInfo.data);
   const lpDecimals = lpMintData.decimals;
   
   if (userLpBalance.lt(new BN(0))) {
-    throw new Error("Insufficient LP token balance");
+    return {
+      success: false,
+      message: "Insufficient LP token balance",
+    };
   }
   return {
-    amount: userLpBalance,
-    decimals: lpDecimals,
+    success: true,
+    data: {
+      amount: userLpBalance,
+      decimals: lpDecimals,
+    }
   }
 }

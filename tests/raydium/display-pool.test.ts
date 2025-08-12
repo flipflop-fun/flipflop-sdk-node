@@ -20,13 +20,13 @@ describe('display pool', () => {
       const result = await displayPool(displayPoolOptions);
       // console.log('Display pool result (SDK):', result);
       
-      if (result) {
-        console.log(result.quoteReserve.toNumber().toLocaleString());
-        console.log(result.baseReserve.toNumber().toLocaleString());
+      if (result && result.data) {
+        console.log(result.data.quoteReserve.toNumber().toLocaleString());
+        console.log(result.data.baseReserve.toNumber().toLocaleString());
         expect(result).toBeDefined();
-        expect(result.poolAddress).toBeDefined();
-        expect(result.mintLp).toBeDefined();
-        expect(result.lpAmount).toBeDefined();
+        expect(result.data.poolAddress).toBeDefined();
+        expect(result.data.mintLp).toBeDefined();
+        expect(result.data.lpAmount).toBeDefined();
       } else {
         console.log('No pool found for local network - this is expected');
       }

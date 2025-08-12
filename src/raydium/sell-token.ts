@@ -1,12 +1,10 @@
 import {
   Connection,
   PublicKey,
-  Keypair,
   LAMPORTS_PER_SOL,
   TransactionMessage,
   VersionedTransaction,
   ComputeBudgetProgram,
-  SystemProgram,
 } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
@@ -14,7 +12,6 @@ import {
   createAssociatedTokenAccountInstruction,
   getAccount,
   TOKEN_PROGRAM_ID,
-  createSyncNativeInstruction,
   createCloseAccountInstruction,
   TokenAccountNotFoundError,
 } from '@solana/spl-token';
@@ -23,11 +20,11 @@ import { getPoolInfoByRpc } from './display-pool';
 import { CONFIGS, getNetworkType } from '../config';
 import { Raydium, getPdaObservationId, makeSwapCpmmBaseInInstruction } from '@raydium-io/raydium-sdk-v2';
 import { AUTH_SEED } from '../constants';
-import { SellTokenOptions, SellTokenResponse } from './types';
+import { ApiResponse, SellTokenOptions, SellTokenResponse } from './types';
 
 export async function sellToken(
   options: SellTokenOptions,
-): Promise<SellTokenResponse> {
+): Promise<ApiResponse<SellTokenResponse>> {
   try {
     const connection = new Connection(options.rpc, 'confirmed');
     const seller = options.seller;
@@ -52,14 +49,24 @@ export async function sellToken(
       options.rpc,
     );
     if (!poolInfo) {
-      throw new Error(`No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`);
+      return {
+        success: false,
+        message: `No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`,
+      }
     }
+    if (!poolInfo.data || !poolInfo.success) {
+      return {
+        success: false,
+        message: `No CPMM pool data found for token ${options.mint}.`,
+      }
+    }
+    const poolInfoData = poolInfo.data;
 
-    const isToken0Sol = poolInfo.mintA.equals(NATIVE_MINT);
+    const isToken0Sol = poolInfoData.mintA.equals(NATIVE_MINT);
     const inputMint = new PublicKey(options.mint);  // 输入是要卖出的代币
     const outputMint = NATIVE_MINT;  // 输出是SOL
-    const inputVault = isToken0Sol ? poolInfo.vaultB : poolInfo.vaultA;  // 代币的vault
-    const outputVault = isToken0Sol ? poolInfo.vaultA : poolInfo.vaultB;  // SOL的vault
+    const inputVault = isToken0Sol ? poolInfoData.vaultB : poolInfoData.vaultA;  // 代币的vault
+    const outputVault = isToken0Sol ? poolInfoData.vaultA : poolInfoData.vaultB;  // SOL的vault
     
     // 获取代币信息以确定小数位数
     const inputTokenInfo = await raydium.token.getTokenInfo(options.mint);
@@ -69,8 +76,8 @@ export async function sellToken(
     const amountIn = new BN(options.amount).mul(new BN(10).pow(new BN(inputDecimals)));
     
     // 获取池子储备量
-    const tokenReserve = isToken0Sol ? new BN(poolInfo.quoteReserve) : new BN(poolInfo.baseReserve);
-    const solReserve = isToken0Sol ? new BN(poolInfo.baseReserve) : new BN(poolInfo.quoteReserve);
+    const tokenReserve = isToken0Sol ? new BN(poolInfoData.quoteReserve) : new BN(poolInfoData.baseReserve);
+    const solReserve = isToken0Sol ? new BN(poolInfoData.baseReserve) : new BN(poolInfoData.quoteReserve);
 
     // 使用 CPMM 公式计算预期输出数量：amountOut = (amountIn * reserveOut) / (reserveIn + amountIn)
     const amountOutExpected = amountIn.mul(solReserve).div(tokenReserve.add(amountIn));
@@ -84,7 +91,10 @@ export async function sellToken(
     const userSolBalance = await connection.getBalance(seller.publicKey);
     const requiredSolForFees = 0.01 * LAMPORTS_PER_SOL; // 预留 0.01 SOL 作为交易费用
     if (userSolBalance < requiredSolForFees) {
-      throw new Error(`Insufficient SOL balance for transaction fees. Required: ${requiredSolForFees / LAMPORTS_PER_SOL} SOL, Available: ${userSolBalance / LAMPORTS_PER_SOL} SOL`);
+      return {
+        success: false,
+        message: `Insufficient SOL balance for transaction fees. Required: ${requiredSolForFees / LAMPORTS_PER_SOL} SOL, Available: ${userSolBalance / LAMPORTS_PER_SOL} SOL`,
+      }
     }
 
     const instructions = [];
@@ -107,13 +117,22 @@ export async function sellToken(
       const tokenBalance = new BN(tokenAccountInfo.amount.toString());
       
       if (tokenBalance.lt(amountIn)) {
-        throw new Error(`Insufficient token balance. Required: ${amountIn.div(new BN(10).pow(new BN(inputDecimals))).toString()} tokens, Available: ${tokenBalance.div(new BN(10).pow(new BN(inputDecimals))).toString()} tokens`);
+        return {
+          success: false,
+          message: `Insufficient token balance. Required: ${amountIn.div(new BN(10).pow(new BN(inputDecimals))).toString()} tokens, Available: ${tokenBalance.div(new BN(10).pow(new BN(inputDecimals))).toString()} tokens`,
+        }
       }
     } catch (error) {
       if (error instanceof TokenAccountNotFoundError) {
-        throw new Error(`Token account not found for mint ${options.mint}. Please ensure you have tokens to sell.`);
+        return {
+          success: false,
+          message: `Token account not found for mint ${options.mint}. Please ensure you have tokens to sell.`,
+        }
       }
-      throw error;
+      return {
+        success: false,
+        message: `Error checking token balance: ${(error as any).message}`,
+      }
     }
 
     // 获取或创建 WSOL 账户
@@ -137,23 +156,26 @@ export async function sellToken(
           )
         );
       } else {
-        throw error;
+        return {
+          success: false,
+          message: `Error checking WSOL account: ${(error as any).message}`,
+        }
       }
     }
 
     // 构建权限地址
     const [authority] = PublicKey.findProgramAddressSync(
       [Buffer.from(AUTH_SEED)],
-      new PublicKey(poolInfo.programId)
+      poolInfoData.programId
     );
 
     // 构建交换指令
     const swapInstruction = makeSwapCpmmBaseInInstruction(
-      new PublicKey(poolInfo.programId),  // programId
+      poolInfoData.programId,  // programId
       seller.publicKey,                   // payer
       authority,                          // authority
       new PublicKey(config.cpSwapConfigAddress),  // configId
-      poolInfo.poolAddress,               // poolId
+      poolInfoData.poolAddress,               // poolId
       sellerInputTokenAccount,            // inputTokenAccount
       sellerOutputTokenAccount,           // outputTokenAccount
       inputVault,                         // inputVault
@@ -162,7 +184,7 @@ export async function sellToken(
       TOKEN_PROGRAM_ID,                   // outputTokenProgramId
       inputMint,                          // inputMint
       outputMint,                         // outputMint
-      getPdaObservationId(new PublicKey(poolInfo.programId), new PublicKey(poolInfo.poolAddress)).publicKey,
+      getPdaObservationId(poolInfoData.programId, poolInfoData.poolAddress).publicKey,
       amountIn,
       minAmountOut,
     );
@@ -219,17 +241,26 @@ export async function sellToken(
         // console.log(`WSOL account cleaned up, ${wsolBalance.toNumber() / LAMPORTS_PER_SOL} SOL converted back`);
       }
     } catch (error) {
-      console.error('Error cleaning up WSOL account:', error);
+      return {
+        success: false,
+        message: `Error cleaning up WSOL account: ${(error as any).message}`,
+      }
     }
 
     return {
-      mintAddress: new PublicKey(options.mint),
-      tokenAmount: options.amount,
-      solAmount: minAmountOut.div(new BN(LAMPORTS_PER_SOL)).toNumber(),
-      poolAddress: poolInfo.poolAddress,
-      txId: sig,
+      success: true,
+      data: {
+        mintAddress: options.mint,
+        tokenAmount: options.amount,
+        solAmount: minAmountOut.div(new BN(LAMPORTS_PER_SOL)).toNumber(),
+        poolAddress: poolInfoData.poolAddress,
+        txId: sig,
+      }
     };
-  } catch (error: any) {
-    throw new Error(error.message);
+  } catch (error) {
+    return {
+      success: false,
+      message: `Error selling token: ${(error as any).message}`,
+    }
   }
 }

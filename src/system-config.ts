@@ -3,13 +3,17 @@ import { initProviderNoSigner } from "./utils";
 import { LAUNCH_RULE_SEEDS, SYSTEM_CONFIG_SEEDS } from "./constants";
 import { CONFIGS, getNetworkType } from "./config";
 import { SystemConfigAccountData, SystemConfigAccountOptions } from "./types";
+import { ApiResponse } from "./raydium/types";
 
 export const getSystemConfig = async (
   options: SystemConfigAccountOptions
-): Promise<SystemConfigAccountData> => {
+): Promise<ApiResponse<SystemConfigAccountData>> => {
   // Validate required parameters
   if (!options.rpc) {
-    throw new Error("Missing --rpc parameter");
+    return {
+      success: false,
+      message: "Missing --rpc parameter",
+    };
   }
 
   const rpc = new Connection(options.rpc, "confirmed");
@@ -35,33 +39,40 @@ export const getSystemConfig = async (
     const systemConfigAccountInfo =
       await program.account.systemConfigData.fetch(systemConfigAccount);
     if (!systemConfigAccountInfo) {
-      throw new Error("❌ Failed to get system config account data");
+      return {
+        success: false,
+        message: "❌ Failed to get system config account data",
+      };
     }
     return {
-      systemConfigAccount,
-      systemManagerAccount: new PublicKey(config.systemManagerAccount),
-      ...systemConfigAccountInfo,
-      count: systemConfigAccountInfo.count.toNumber(),
-      refundFeeRate: systemConfigAccountInfo.refundFeeRate,
-      launchRuleAccount: launchRuleAccountPda,
-      referrerResetIntervalSeconds:
-        systemConfigAccountInfo.referrerResetIntervalSeconds.toNumber(),
-      updateMetadataFee:
-        systemConfigAccountInfo.updateMetadataFee.toNumber() / 1e9,
-      customizedDeployFee:
-        systemConfigAccountInfo.customizedDeployFee.toNumber() / 1e9,
-      initPoolWsolAmount:
-        systemConfigAccountInfo.initPoolWsolAmount.toNumber() / 100000,
-      graduateFeeRate: systemConfigAccountInfo.graduateFeeRate.toNumber(),
-      minGraduateFee: systemConfigAccountInfo.minGraduateFee.toNumber() / 1e9,
-      raydiumCpmmCreateFee:
-        systemConfigAccountInfo.raydiumCpmmCreateFee.toNumber() / 1e9,
-      isPause: systemConfigAccountInfo.isPause,
+      success: true,
+      data: {
+        systemConfigAccount,
+        systemManagerAccount: new PublicKey(config.systemManagerAccount),
+        ...systemConfigAccountInfo,
+        count: systemConfigAccountInfo.count.toNumber(),
+        refundFeeRate: systemConfigAccountInfo.refundFeeRate,
+        launchRuleAccount: launchRuleAccountPda,
+        referrerResetIntervalSeconds:
+          systemConfigAccountInfo.referrerResetIntervalSeconds.toNumber(),
+        updateMetadataFee:
+          systemConfigAccountInfo.updateMetadataFee.toNumber() / 1e9,
+        customizedDeployFee:
+          systemConfigAccountInfo.customizedDeployFee.toNumber() / 1e9,
+        initPoolWsolAmount:
+          systemConfigAccountInfo.initPoolWsolAmount.toNumber() / 100000,
+        graduateFeeRate: systemConfigAccountInfo.graduateFeeRate.toNumber(),
+        minGraduateFee: systemConfigAccountInfo.minGraduateFee.toNumber() / 1e9,
+        raydiumCpmmCreateFee:
+          systemConfigAccountInfo.raydiumCpmmCreateFee.toNumber() / 1e9,
+        isPause: systemConfigAccountInfo.isPause,
+      },
     };
   } catch (error) {
-    throw new Error(
-      "❌ Error displaying system config information:" +
-        (error instanceof Error ? error.message : "Unknown error")
-    );
+    return {
+      success: false,
+      message: "❌ Error displaying system config information:" +
+        (error instanceof Error ? error.message : "Unknown error"),
+    };
   }
 };
