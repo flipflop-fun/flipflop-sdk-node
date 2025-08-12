@@ -9,10 +9,10 @@ export { displayLP } from "./display-lp";
 export { createPool } from "./create-pool";
 
 // Export types
-export type { 
-  BuyTokenOptions, 
+export type {
+  BuyTokenOptions,
   BuyTokenResponse,
-  SellTokenOptions, 
+  SellTokenOptions,
   SellTokenResponse,
   AddLiquidityOptions,
   AddLiquidityResponse,

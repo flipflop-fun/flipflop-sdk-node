@@ -1,16 +1,16 @@
 import { Connection } from "@solana/web3.js";
-import {
-  Raydium,
-  ZERO,
-} from "@raydium-io/raydium-sdk-v2";
-import {
-  NATIVE_MINT,
-} from "@solana/spl-token";
+import { PoolInfoLayout, Raydium, ZERO } from "@raydium-io/raydium-sdk-v2";
+import { NATIVE_MINT } from "@solana/spl-token";
 import BN from "bn.js";
 import { getPoolInfoByRpc } from "./display-pool";
 import { CONFIGS, getNetworkType } from "../config";
 import { getLpTokenAmount } from "./remove-liquidity";
-import { ApiResponse, DisplayLPOptions, DisplayPoolResponse, LPDisplayResponse } from "./types";
+import {
+  ApiResponse,
+  DisplayLPOptions,
+  DisplayPoolResponse,
+  LPDisplayResponse,
+} from "./types";
 
 export async function displayLP(
   options: DisplayLPOptions
@@ -49,7 +49,7 @@ export async function displayLP(
       connection,
       cluster: networkType as any,
       disableFeatureCheck: true,
-      disableLoadToken: false,
+      disableLoadToken: true,
     });
 
     // 使用与remove-liquidity.ts相同的方式获取池子信息
@@ -58,7 +58,7 @@ export async function displayLP(
       raydium,
       NATIVE_MINT,
       mint,
-      rpc,
+      rpc
     );
 
     if (!poolInfo) {
@@ -77,19 +77,6 @@ export async function displayLP(
 
     const poolInfoData = poolInfo.data as DisplayPoolResponse;
 
-    // 获取代币信息
-    const tokenAInfo = await raydium.token.getTokenInfo(poolInfoData.mintA);
-    const tokenBInfo = await raydium.token.getTokenInfo(poolInfoData.mintB);
-    const lpTokenInfo = await raydium.token.getTokenInfo(poolInfoData.mintLp);
-
-    if (!tokenAInfo || !tokenBInfo || !lpTokenInfo) {
-      return {
-        success: false,
-        message: "Failed to get token information",
-      };
-    }
-
-    // 使用与remove-liquidity.ts相同的方式获取LP代币余额
     const lpTokenMint = poolInfoData.mintLp;
     let lpTokenBalance = new BN(0);
     let shareOfPool = 0;
@@ -98,27 +85,34 @@ export async function displayLP(
 
     try {
       const lpToken = await getLpTokenAmount(connection, owner, lpTokenMint);
+
       if (!lpToken.success || !lpToken.data) {
         return {
           success: false,
           message: lpToken.message || "Unknown error",
         };
       }
-      
+
       // 转换为可读格式
       lpTokenBalance = lpToken.data.amount;
 
       // 计算池子份额
       const totalLpSupply = poolInfoData.lpAmount;
       if (totalLpSupply > ZERO) {
-        const sharePercent = lpToken.data.amount.mul(new BN(10000)).div(totalLpSupply).toNumber() / 100;
+        const sharePercent =
+          lpToken.data.amount.mul(new BN(10000)).div(totalLpSupply).toNumber() /
+          100;
         shareOfPool = sharePercent;
 
-        const poolTokenAReserve = new BN(poolInfoData.baseReserve || '0');
-        const poolTokenBReserve = new BN(poolInfoData.quoteReserve || '0');
+        const poolTokenAReserve = new BN(poolInfoData.baseReserve || "0");
+        const poolTokenBReserve = new BN(poolInfoData.quoteReserve || "0");
 
-        tokenAAmount = lpToken.data.amount.mul(poolTokenAReserve).div(totalLpSupply);
-        tokenBAmount = lpToken.data.amount.mul(poolTokenBReserve).div(totalLpSupply);
+        tokenAAmount = lpToken.data.amount
+          .mul(poolTokenAReserve)
+          .div(totalLpSupply);
+        tokenBAmount = lpToken.data.amount
+          .mul(poolTokenBReserve)
+          .div(totalLpSupply);
       }
     } catch (error) {
       return {
@@ -137,7 +131,7 @@ export async function displayLP(
         tokenAAmount,
         tokenBAmount,
         poolInfo: poolInfoData,
-      }
+      },
     };
   } catch (error) {
     return {

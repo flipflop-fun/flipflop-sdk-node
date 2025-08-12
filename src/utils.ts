@@ -697,7 +697,7 @@ export const mintBy = async (
       return {
         success: false,
         message: "Lookup table account not found",
-      }
+      };
     }
     const lookupTable = new AddressLookupTableAccount({
       key: lookupTableAddress,
@@ -1000,4 +1000,3 @@ export const createLookupTable = async (
 
   return lookupTable;
 };
-

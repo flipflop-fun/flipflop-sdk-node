@@ -1,16 +1,37 @@
-import { Connection, PublicKey, Keypair, TransactionMessage, VersionedTransaction, SystemProgram, ComputeBudgetProgram } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  Keypair,
+  TransactionMessage,
+  VersionedTransaction,
+  SystemProgram,
+  ComputeBudgetProgram,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 import {
   Raydium,
   Percent,
   makeDepositCpmmInInstruction,
 } from "@raydium-io/raydium-sdk-v2";
-import { AccountLayout, getAssociatedTokenAddress, NATIVE_MINT, createAssociatedTokenAccountInstruction, getAccount, createSyncNativeInstruction } from "@solana/spl-token";
+import {
+  AccountLayout,
+  getAssociatedTokenAddress,
+  NATIVE_MINT,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  createSyncNativeInstruction,
+} from "@solana/spl-token";
 import { CONFIGS, getNetworkType } from "../config";
 import BN from "bn.js";
 import { getPoolInfoByRpc } from "./display-pool";
 import { compareMints } from "../utils";
 import { AUTH_SEED } from "../constants";
-import { AddLiquidityOptions, AddLiquidityResponse, DisplayPoolResponse, ApiResponse } from "./types";
+import {
+  AddLiquidityOptions,
+  AddLiquidityResponse,
+  DisplayPoolResponse,
+  ApiResponse,
+} from "./types";
 
 export const addLiquidity = async (
   options: AddLiquidityOptions
@@ -20,35 +41,35 @@ export const addLiquidity = async (
     return {
       success: false,
       message: "Missing rpc parameter",
-    }
+    };
   }
 
   if (!options.mint) {
     return {
       success: false,
       message: "Missing mint parameter",
-    }
+    };
   }
 
   if (!options.tokenAmount || options.tokenAmount <= 0) {
     return {
       success: false,
       message: "Invalid tokenAmount parameter",
-    }
+    };
   }
 
   if (options.slippage === undefined || options.slippage < 0) {
     return {
       success: false,
       message: "Invalid slippage parameter",
-    }
+    };
   }
 
   if (!options.payer) {
     return {
       success: false,
       message: "Missing provider parameter",
-    }
+    };
   }
 
   const connection = new Connection(options.rpc, "confirmed");
@@ -62,7 +83,7 @@ export const addLiquidity = async (
       connection,
       cluster: networkType as any,
       disableFeatureCheck: true,
-      disableLoadToken: false,
+      disableLoadToken: true,
       blockhashCommitment: "finalized",
     });
 
@@ -79,18 +100,7 @@ export const addLiquidity = async (
       return {
         success: false,
         message: `No token account found for mint ${options.mint}`,
-      }
-    }
-
-    // Get token info using Raydium API
-    const tokenInfo = await raydium.token.getTokenInfo(options.mint);
-    const solInfo = await raydium.token.getTokenInfo(NATIVE_MINT);
-
-    if (!tokenInfo || !solInfo) {
-      return {
-        success: false,
-        message: "Failed to get token information",
-      }
+      };
     }
 
     // Parse token account data
@@ -99,14 +109,14 @@ export const addLiquidity = async (
     );
 
     const availableTokenBalance = new BN(tokenAccountInfo.amount.toString())
-      .div(new BN(10).pow(new BN(tokenInfo.decimals)))
+      .div(new BN(LAMPORTS_PER_SOL))
       .toNumber();
 
     if (availableTokenBalance < options.tokenAmount) {
       return {
         success: false,
         message: `Insufficient token balance. Available: ${availableTokenBalance}, Required: ${options.tokenAmount}`,
-      }
+      };
     }
 
     // Fallback to mint-based discovery using API
@@ -115,39 +125,41 @@ export const addLiquidity = async (
       raydium,
       NATIVE_MINT,
       options.mint,
-      options.rpc,
+      options.rpc
     );
 
     if (!poolInfo) {
       return {
         success: false,
         message: `No CPMM pool found for token ${options.mint}. You can specify poolAddress parameter to use a specific pool.`,
-      }
+      };
     }
 
     if (!poolInfo.success) {
       return {
         success: false,
         message: poolInfo.message || "Unknown error",
-      }
+      };
     }
 
     const poolInfoData = poolInfo.data as DisplayPoolResponse;
     // Calculate required SOL amount based on pool ratio
-    const tokenAmountBN = new BN(options.tokenAmount).mul(new BN(10).pow(new BN(tokenInfo.decimals)));
+    const tokenAmountBN = new BN(options.tokenAmount).mul(
+      new BN(LAMPORTS_PER_SOL)
+    );
     // Ensure we have valid reserve values
     const mintAmountA = String(poolInfoData.baseReserve || "0");
     const mintAmountB = String(poolInfoData.quoteReserve || "0");
 
-    const cleanMintAmountA = mintAmountA.replace(/[^0-9]/g, '') || "1000000000";
-    const cleanMintAmountB = mintAmountB.replace(/[^0-9]/g, '') || "1000000000";
+    const cleanMintAmountA = mintAmountA.replace(/[^0-9]/g, "") || "1000000000";
+    const cleanMintAmountB = mintAmountB.replace(/[^0-9]/g, "") || "1000000000";
 
     // Determine token and SOL reserves based on which mint is which
     let tokenReserve: BN;
     let solReserve: BN;
-    
+
     const tokenMint = new PublicKey(options.mint);
-    
+
     if (poolInfoData.mintA.equals(tokenMint)) {
       tokenReserve = new BN(cleanMintAmountA);
       solReserve = new BN(cleanMintAmountB);
@@ -161,7 +173,7 @@ export const addLiquidity = async (
       return {
         success: false,
         message: "Cannot calculate SOL amount: token reserve is zero",
-      }
+      };
     }
 
     // Calculate required SOL amount
@@ -178,7 +190,7 @@ export const addLiquidity = async (
         message: `Insufficient SOL balance. Available: ${
           solBalance / 1e9
         }, Required: ${requiredSolAmountBN.toNumber() / 1e9}`,
-      }
+      };
     }
 
     // Create slippage percentage
@@ -190,7 +202,7 @@ export const addLiquidity = async (
       requiredSolAmountBN,
       tokenAmountBN,
       options.payer,
-      slippagePercent,
+      slippagePercent
     );
 
     return {
@@ -203,7 +215,7 @@ export const addLiquidity = async (
       message: `Failed to add liquidity: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
-    }
+    };
   }
 };
 
@@ -214,27 +226,47 @@ async function doAddLiquidityInstruction(
   solAmount: BN,
   tokenAmount: BN,
   payer: Keypair,
-  slippagePercent: Percent,
+  slippagePercent: Percent
 ) {
-  const [mint0, mint1] = compareMints(NATIVE_MINT, mint) < 0 ? [NATIVE_MINT, mint] : [mint, NATIVE_MINT];
+  const [mint0, mint1] =
+    compareMints(NATIVE_MINT, mint) < 0
+      ? [NATIVE_MINT, mint]
+      : [mint, NATIVE_MINT];
   const isSolFirst = mint0.equals(NATIVE_MINT);
 
-  const userSolAccount = await getAssociatedTokenAddress(NATIVE_MINT, payer.publicKey);
-  const userTokenAccount = await getAssociatedTokenAddress(mint, payer.publicKey);
+  const userSolAccount = await getAssociatedTokenAddress(
+    NATIVE_MINT,
+    payer.publicKey
+  );
+  const userTokenAccount = await getAssociatedTokenAddress(
+    mint,
+    payer.publicKey
+  );
   const mintA = mint0;
   const mintB = mint1;
   const tokenAccountA = isSolFirst ? userSolAccount : userTokenAccount;
   const tokenAccountB = isSolFirst ? userTokenAccount : userSolAccount;
-  const vaultA = isSolFirst ? new PublicKey(poolInfo.vaultA) : new PublicKey(poolInfo.vaultB);
-  const vaultB = isSolFirst ? new PublicKey(poolInfo.vaultB) : new PublicKey(poolInfo.vaultA);
-  const userLpAccount = await getAssociatedTokenAddress(new PublicKey(poolInfo.mintLp), payer.publicKey);
+  const vaultA = isSolFirst
+    ? new PublicKey(poolInfo.vaultA)
+    : new PublicKey(poolInfo.vaultB);
+  const vaultB = isSolFirst
+    ? new PublicKey(poolInfo.vaultB)
+    : new PublicKey(poolInfo.vaultA);
+  const userLpAccount = await getAssociatedTokenAddress(
+    new PublicKey(poolInfo.mintLp),
+    payer.publicKey
+  );
 
   const [authority] = PublicKey.findProgramAddressSync(
     [Buffer.from(AUTH_SEED)],
     new PublicKey(poolInfo.programId)
   );
-  
-  const slippageMultiplier = new BN(10000 + slippagePercent.numerator.toNumber() * 10000 / slippagePercent.denominator.toNumber());
+
+  const slippageMultiplier = new BN(
+    10000 +
+      (slippagePercent.numerator.toNumber() * 10000) /
+        slippagePercent.denominator.toNumber()
+  );
   const maxSolAmount = solAmount.mul(slippageMultiplier).div(new BN(10000));
   const maxTokenAmount = tokenAmount.mul(slippageMultiplier).div(new BN(10000));
   const amountMaxA = isSolFirst ? maxSolAmount : maxTokenAmount;
@@ -249,7 +281,9 @@ async function doAddLiquidityInstruction(
     // 检查 WSOL 账户余额是否足够
     if (new BN(wsolAccountInfo.amount.toString()).lt(maxSolAmount)) {
       // WSOL 余额不足，需要包装更多 SOL
-      const additionalSolNeeded = maxSolAmount.sub(new BN(wsolAccountInfo.amount.toString()));
+      const additionalSolNeeded = maxSolAmount.sub(
+        new BN(wsolAccountInfo.amount.toString())
+      );
       instructions.push(
         SystemProgram.transfer({
           fromPubkey: payer.publicKey,
@@ -305,11 +339,11 @@ async function doAddLiquidityInstruction(
     );
   }
 
-  let estimatedLpAmount: BN;  
+  let estimatedLpAmount: BN;
   if (new BN(poolInfo.lpAmount).isZero()) {
     estimatedLpAmount = BN.min(solAmount, tokenAmount);
   } else {
-    const poolSolReserve = new BN(poolInfo.baseReserve || '0');
+    const poolSolReserve = new BN(poolInfo.baseReserve || "0");
     const totalLpSupply = new BN(poolInfo.lpAmount);
     if (poolSolReserve.gt(new BN(0)) && totalLpSupply.gt(new BN(0))) {
       estimatedLpAmount = solAmount.mul(totalLpSupply).div(poolSolReserve);
@@ -317,8 +351,8 @@ async function doAddLiquidityInstruction(
       estimatedLpAmount = BN.min(solAmount, tokenAmount);
     }
   }
-  estimatedLpAmount = estimatedLpAmount.mul(new BN(98)).div(new BN(100));
-  
+  // estimatedLpAmount = estimatedLpAmount.mul(new BN(98)).div(new BN(100));
+
   // 添加计算预算指令
   instructions.push(
     ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
@@ -327,12 +361,12 @@ async function doAddLiquidityInstruction(
 
   const addLiquidityIx = makeDepositCpmmInInstruction(
     new PublicKey(poolInfo.programId), // programId
-    payer.publicKey,                   // owner
-    authority,                         // authority
+    payer.publicKey, // owner
+    authority, // authority
     new PublicKey(poolInfo.poolAddress), // poolId
-    userLpAccount,                     // lpTokenAccount
-    tokenAccountA,                    // tokenAccountA (SOL)
-    tokenAccountB,                  // tokenAccountB (Token)
+    userLpAccount, // lpTokenAccount
+    tokenAccountA, // tokenAccountA (SOL)
+    tokenAccountB, // tokenAccountB (Token)
     vaultA,
     vaultB,
     mintA,
@@ -340,7 +374,7 @@ async function doAddLiquidityInstruction(
     new PublicKey(poolInfo.mintLp),
     estimatedLpAmount,
     amountMaxA,
-    amountMaxB,
+    amountMaxB
   );
 
   instructions.push(addLiquidityIx);
@@ -356,7 +390,7 @@ async function doAddLiquidityInstruction(
   tx.sign([payer]);
 
   const sig = await connection.sendTransaction(tx);
-  await connection.confirmTransaction(sig, 'confirmed');
+  await connection.confirmTransaction(sig, "confirmed");
   return {
     signature: sig,
     mintAddress: mint,

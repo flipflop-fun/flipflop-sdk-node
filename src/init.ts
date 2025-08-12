@@ -166,6 +166,6 @@ export const initializeSystemConfigAccount = async (
       // systemConfigExists,
       // initializationTx,
       // configuration: existingConfig
-    }
+    },
   };
 };

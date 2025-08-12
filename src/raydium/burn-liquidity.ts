@@ -3,6 +3,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
   ComputeBudgetProgram,
+  LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import {
   createBurnInstruction,
@@ -16,7 +17,12 @@ import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { CONFIGS, getNetworkType } from "../config";
 import { getPoolInfoByRpc } from "./display-pool";
 import BN from "bn.js";
-import { ApiResponse, BurnLiquidityOptions, BurnLiquidityResponse, DisplayPoolResponse } from "./types";
+import {
+  ApiResponse,
+  BurnLiquidityOptions,
+  BurnLiquidityResponse,
+  DisplayPoolResponse,
+} from "./types";
 
 export const burnLiquidity = async (
   options: BurnLiquidityOptions
@@ -58,9 +64,10 @@ export const burnLiquidity = async (
     // Initialize Raydium SDK
     const raydium = await Raydium.load({
       connection,
+      owner: options.burner,
       cluster: networkType as any,
       disableFeatureCheck: true,
-      disableLoadToken: false,
+      disableLoadToken: true,
       blockhashCommitment: "finalized",
     });
 
@@ -84,7 +91,7 @@ export const burnLiquidity = async (
       return {
         success: false,
         message: poolInfo.message || "Unknown error",
-      }
+      };
     }
 
     const poolInfoData = poolInfo.data as DisplayPoolResponse;
@@ -92,18 +99,6 @@ export const burnLiquidity = async (
     // Get LP mint from pool info
     const lpMintPubkey = poolInfoData.lpMint;
     // console.log(`Found LP mint: ${lpMintPubkey.toBase58()}`);
-
-    // Get LP token info to determine decimals
-    const lpTokenInfo = await raydium.token.getTokenInfo(
-      lpMintPubkey.toBase58()
-    );
-
-    if (!lpTokenInfo) {
-      return {
-        success: false,
-        message: "Failed to get LP token information",
-      };
-    }
 
     // Get the associated token account for LP tokens
     const lpTokenAccount = await getAssociatedTokenAddress(
@@ -125,12 +120,12 @@ export const burnLiquidity = async (
       return {
         success: false,
         message: `Error checking LP token account: ${(error as any).message}`,
-      }
+      };
     }
 
     // Check LP token balance
     const availableLpBalance = new BN(lpTokenAccountInfo.amount.toString())
-      .div(new BN(10).pow(new BN(lpTokenInfo.decimals)))
+      .div(new BN(LAMPORTS_PER_SOL))
       .toNumber();
 
     if (availableLpBalance < options.lpTokenAmount) {
@@ -146,7 +141,7 @@ export const burnLiquidity = async (
 
     // Calculate burn amount with decimals
     const burnAmount = new BN(options.lpTokenAmount).mul(
-      new BN(10).pow(new BN(lpTokenInfo.decimals))
+      new BN(LAMPORTS_PER_SOL)
     );
 
     const instructions = [];
@@ -197,7 +192,7 @@ export const burnLiquidity = async (
         burnedLpTokenAmount: options.lpTokenAmount,
         lpMintAddress: lpMintPubkey,
         poolAddress: poolInfoData.poolAddress,
-      }
+      },
     };
   } catch (error) {
     return {

@@ -49,7 +49,6 @@ export interface BuyTokenResponse {
   txId: string;
 }
 
-
 export interface CreatePoolOptions {
   rpc: string;
   mintA: PublicKey; // Base token mint (e.g., SOL)
@@ -69,7 +68,6 @@ export interface CreatePoolResponse {
   amountB: BN;
   creator: PublicKey;
 }
-
 
 export interface DisplayLPOptions {
   rpc: string;

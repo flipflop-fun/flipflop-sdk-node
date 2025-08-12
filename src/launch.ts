@@ -194,7 +194,7 @@ export const launchToken = async (
         configAddress: configAccount,
         metadata: metadata,
         configuration: configData,
-      }
+      },
     };
   } catch (error) {
     return {

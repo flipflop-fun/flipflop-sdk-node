@@ -1,8 +1,5 @@
 import { Connection, PublicKey } from "@solana/web3.js";
-import {
-  CpmmPoolInfoLayout,
-  Raydium,
-} from "@raydium-io/raydium-sdk-v2";
+import { CpmmPoolInfoLayout, Raydium } from "@raydium-io/raydium-sdk-v2";
 import { getNetworkType, CONFIGS } from "../config";
 import { compareMints, getPoolAddress } from "../utils";
 import { ApiResponse, DisplayPoolOptions, DisplayPoolResponse } from "./types";
@@ -17,7 +14,6 @@ export const getPoolInfoByRpc = async (
   try {
     const networkType = getNetworkType(rpc);
     const config = CONFIGS[networkType];
-
     const mintA = new PublicKey(tokenAMint);
     const mintB = new PublicKey(tokenBMint);
     const ammConfig = new PublicKey(config.cpSwapConfigAddress);
@@ -55,12 +51,15 @@ export const getPoolInfoByRpc = async (
     )[poolAddress.toBase58()];
 
     return {
-      ...rpcPoolInfo,
-      lpMint: cpmmPoolInfo.mintLp,
-      poolAddress: poolAddress,
-      mintA: mint0,
-      mintB: mint1,
-      programId,
+      success: true,
+      data: {
+        ...rpcPoolInfo,
+        lpMint: cpmmPoolInfo.mintLp,
+        poolAddress: poolAddress,
+        mintA: mint0,
+        mintB: mint1,
+        programId,
+      },
     };
   } catch (error) {
     return {
@@ -88,16 +87,19 @@ export async function displayPool(
     connection,
     cluster: networkType as any,
     disableFeatureCheck: true,
+    disableLoadToken: true,
   });
 
   try {
-    return await getPoolInfoByRpc(
+    const result = await getPoolInfoByRpc(
       connection,
       raydium,
       options.tokenAMint,
       options.tokenBMint,
       connection.rpcEndpoint
     );
+    console.log(result?.success, result?.message);
+    return result;
   } catch (error) {
     return {
       success: false,

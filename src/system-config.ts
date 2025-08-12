@@ -71,7 +71,8 @@ export const getSystemConfig = async (
   } catch (error) {
     return {
       success: false,
-      message: "❌ Error displaying system config information:" +
+      message:
+        "❌ Error displaying system config information:" +
         (error instanceof Error ? error.message : "Unknown error"),
     };
   }

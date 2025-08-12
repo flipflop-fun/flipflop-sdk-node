@@ -114,7 +114,8 @@ export const setUrc = async (
       ) {
         return {
           success: false,
-          message: "❌ Error: Referral code is already assigned to another account",
+          message:
+            "❌ Error: Referral code is already assigned to another account",
         };
       }
     }

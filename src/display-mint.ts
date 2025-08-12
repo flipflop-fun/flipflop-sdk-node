@@ -94,7 +94,8 @@ export const getMintData = async (
         liquidityTokensRatio: configAccountInfo.liquidityTokensRatio * 100,
         currentSupply: configAccountInfo.supply,
         liquidityTokensSupply: configAccountInfo.supply * liquidityTokensRatio,
-        minterTokensSupply: configAccountInfo.supply * (1 - liquidityTokensRatio),
+        minterTokensSupply:
+          configAccountInfo.supply * (1 - liquidityTokensRatio),
         currentEra: configAccountInfo.currentEra,
         currentEpoch: configAccountInfo.currentEpoch,
         startTimestampEpoch: configAccountInfo.startTimestampEpoch,

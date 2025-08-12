@@ -253,13 +253,14 @@ const generateMetadataUri = async (
       data: {
         imageUrl,
         metadataUrl,
-      }
+      },
     };
   } catch (error) {
     console.error("Error generating metadata URI:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Unknown error occurred",
+      message:
+        error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 };
