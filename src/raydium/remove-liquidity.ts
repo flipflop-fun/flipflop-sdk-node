@@ -15,6 +15,10 @@ import {
   NATIVE_MINT,
   AccountLayout,
   MintLayout,
+  createAssociatedTokenAccountInstruction,
+  createCloseAccountInstruction,
+  getAccount,
+  TokenAccountNotFoundError,
 } from "@solana/spl-token";
 import BN from "bn.js";
 import { getPoolInfoByRpc } from "./display-pool";
@@ -218,6 +222,41 @@ async function doRemoveLiquidityInstruction(
   //   mint1: mint1.toString(),
   // });
 
+  // 检查并创建必要的代币账户
+  const instructions = [];
+  
+  // 检查 tokenA 账户（可能是 WSOL）
+  try {
+    await getAccount(connection, userTokenAccountA);
+  } catch (error: any) {
+    if (error.name === "TokenAccountNotFoundError") {
+      instructions.push(
+        createAssociatedTokenAccountInstruction(
+          payer.publicKey,
+          userTokenAccountA,
+          payer.publicKey,
+          mint0
+        )
+      );
+    }
+  }
+  
+  // 检查 tokenB 账户（可能是 WSOL）
+  try {
+    await getAccount(connection, userTokenAccountB);
+  } catch (error: any) {
+    if (error.name === "TokenAccountNotFoundError") {
+      instructions.push(
+        createAssociatedTokenAccountInstruction(
+          payer.publicKey,
+          userTokenAccountB,
+          payer.publicKey,
+          mint1
+        )
+      );
+    }
+  }
+  
   // 创建withdraw指令
   const withdrawIx = makeWithdrawCpmmInInstruction(
     new PublicKey(poolInfo.programId), // programId
@@ -237,12 +276,14 @@ async function doRemoveLiquidityInstruction(
     minAmount1 // minimumAmountB (正确排序)
   );
 
+  instructions.push(withdrawIx);
+
   // 构建并发送交易
   const { blockhash } = await connection.getLatestBlockhash();
   const message = new TransactionMessage({
     payerKey: payer.publicKey,
     recentBlockhash: blockhash,
-    instructions: [withdrawIx],
+    instructions, // 使用包含创建账户指令的数组
   }).compileToV0Message();
 
   const tx = new VersionedTransaction(message);
@@ -250,6 +291,45 @@ async function doRemoveLiquidityInstruction(
 
   const sig = await connection.sendTransaction(tx);
   await connection.confirmTransaction(sig, "confirmed");
+
+  // 添加 WSOL 清理逻辑
+  try {
+    // 检查是否有 WSOL 需要清理
+    const wsolAccount = mint0.equals(NATIVE_MINT) ? userTokenAccountA : 
+                     mint1.equals(NATIVE_MINT) ? userTokenAccountB : null;
+    
+    if (wsolAccount) {
+      const wsolAccountInfo = await getAccount(connection, wsolAccount);
+      const wsolBalance = new BN(wsolAccountInfo.amount.toString());
+      
+      if (wsolBalance.gt(new BN(0))) {
+        // 创建关闭 WSOL 账户的指令，将剩余 WSOL 转换回 SOL
+        const closeInstructions = [
+          createCloseAccountInstruction(
+            wsolAccount,
+            payer.publicKey,
+            payer.publicKey
+          )
+        ];
+        
+        const { blockhash: closeBlockhash } = await connection.getLatestBlockhash();
+        const closeMessage = new TransactionMessage({
+          payerKey: payer.publicKey,
+          recentBlockhash: closeBlockhash,
+          instructions: closeInstructions,
+        }).compileToV0Message();
+        
+        const closeTx = new VersionedTransaction(closeMessage);
+        closeTx.sign([payer]);
+        
+        const closeSig = await connection.sendTransaction(closeTx);
+        await connection.confirmTransaction(closeSig, "confirmed");
+      }
+    }
+  } catch (error) {
+    console.warn(`Warning: Failed to cleanup WSOL account: ${(error as any).message}`);
+    // 不抛出错误，因为主要的移除流动性操作已经成功
+  }
 
   return {
     signature: sig,

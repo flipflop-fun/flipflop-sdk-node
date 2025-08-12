@@ -324,7 +324,7 @@ export async function buyToken(
       success: true,
       data: {
         mintAddress: new PublicKey(options.mint),
-        solAmount: maxAmountIn.div(new BN(LAMPORTS_PER_SOL)).toNumber(),
+        solAmount: maxAmountIn.toNumber() / LAMPORTS_PER_SOL,
         tokenAmount: options.amount,
         poolAddress: poolInfoData.poolAddress,
         txId: sig,
