@@ -1,4 +1,4 @@
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { ComputeBudgetProgram, Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { initProvider, parseConfigData } from "./utils";
 import {
   MINT_SEED,
@@ -171,12 +171,13 @@ export const launchToken = async (
       launchRuleAccount: launchRuleAccountPda,
     };
 
+    const ix0 = ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 });
     const instructionInitializeToken = await program.methods
       .initializeToken(metadata, initConfigData)
       .accounts(contextInitializeToken)
       .instruction();
 
-    const transaction = new Transaction().add(instructionInitializeToken);
+    const transaction = new Transaction().add(ix0).add(instructionInitializeToken);
 
     const tx = await provider.sendAndConfirm(transaction, [creator]);
 

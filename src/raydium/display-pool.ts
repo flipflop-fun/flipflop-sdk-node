@@ -98,7 +98,6 @@ export async function displayPool(
       options.tokenBMint,
       connection.rpcEndpoint
     );
-    console.log(result?.success, result?.message);
     return result;
   } catch (error) {
     return {

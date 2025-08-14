@@ -22,9 +22,9 @@ export const CONFIGS = {
     apiBaseUrl: "https://api-dev.flipflop.plus",
   } as NetworkConfig,
   devnet: {
-    programId: "8GM2N7qQjzMyhqewu8jpDgzUh2BJbtBxSY1WzSFeFm6U",
+    programId: "FLipzZfErPUtDQPj9YrC6wp4nRRiVxRkFm3jdFmiPHJV",
     lookupTableAccount: "EebRqpLtUgjX17pJJNNbd6ngtYa34VGa51oYsibwJRXy",
-    systemManagerAccount: "CXzddeiDgbTTxNnd1apeUGE7E1UAdvBoysf7c271AA79",
+    systemManagerAccount: "DJ3jvpv6k7uhq8h9oVHZck6oY4dQqY1GHaLvCLjSqxaD",
     cpSwapProgram: "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW",
     cpSwapConfigAddress: "9zSzfkYy6awexsHvmggeH36pfVUdDGyCcwmjT3AQPBj6",
     createPoolFeeReceive: "G11FKBRaAkHAKuLCgLM6K6NUc9rTjPAznRCjZifrTQe2",
