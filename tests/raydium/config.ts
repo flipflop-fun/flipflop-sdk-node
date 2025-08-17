@@ -1,4 +1,4 @@
-export const TOKEN_MINT = "Ee6E9vhbNdutVCDvupeypzY6qdC2povy5PKMkPaALgeh";
+export const TOKEN_MINT = "4fwi3ar1FMnbjjbcbQHjxGsEkW4Dni8rvZxQp2ZafQ2j";
 // mijyHgDVcKD1oGxr6E8NXkHhkdu5LDQRzGpR9JfTtSE
 // export const OPERATOR_KEYPAIR = "4ciQbhLkfQNhxRfb8qog5WooAVTjtSvRkSi5T51YZqPrQ2N1DmdBCH58FiTfKPHAP7spFZF6cuy9kCq1Rnu4w2wt";
 // FhGn4TJykwL6tKmMkq19dZmV5XAdNcGUVWUA3Edfpf5x

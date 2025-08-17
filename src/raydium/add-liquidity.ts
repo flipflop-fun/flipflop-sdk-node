@@ -121,7 +121,6 @@ export const addLiquidity = async (
 
     // Fallback to mint-based discovery using API
     const poolInfo = await getPoolInfoByRpc(
-      connection,
       raydium,
       NATIVE_MINT,
       options.mint,

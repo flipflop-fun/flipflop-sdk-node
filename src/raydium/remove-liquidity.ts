@@ -61,7 +61,6 @@ export async function removeLiquidity(
     });
 
     const poolInfo = await getPoolInfoByRpc(
-      connection,
       raydium,
       NATIVE_MINT,
       options.mint,

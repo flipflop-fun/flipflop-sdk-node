@@ -5,7 +5,6 @@ import { compareMints, getPoolAddress } from "../utils";
 import { ApiResponse, DisplayPoolOptions, DisplayPoolResponse } from "./types";
 
 export const getPoolInfoByRpc = async (
-  connection: Connection,
   raydium: any,
   tokenAMint: PublicKey,
   tokenBMint: PublicKey,
@@ -18,6 +17,7 @@ export const getPoolInfoByRpc = async (
     const mintB = new PublicKey(tokenBMint);
     const ammConfig = new PublicKey(config.cpSwapConfigAddress);
     const programId = new PublicKey(config.cpSwapProgram);
+    const connection = new Connection(rpc, "confirmed");
 
     const [mint0, mint1] =
       compareMints(mintA, mintB) < 0 ? [mintA, mintB] : [mintB, mintA];
@@ -79,7 +79,7 @@ export async function displayPool(
       message: "Token mints are required",
     };
   }
-  const connection = options.connection;
+  const connection = new Connection(options.rpc, "confirmed");
   const networkType = getNetworkType(connection.rpcEndpoint);
 
   // Initialize Raydium SDK (without wallet for read-only operations)
@@ -92,7 +92,6 @@ export async function displayPool(
 
   try {
     const result = await getPoolInfoByRpc(
-      connection,
       raydium,
       options.tokenAMint,
       options.tokenBMint,

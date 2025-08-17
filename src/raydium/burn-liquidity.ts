@@ -73,7 +73,6 @@ export const burnLiquidity = async (
 
     // Get pool info using getPoolInfoByRpc function
     const poolInfo = await getPoolInfoByRpc(
-      connection,
       raydium,
       options.mint,
       NATIVE_MINT,

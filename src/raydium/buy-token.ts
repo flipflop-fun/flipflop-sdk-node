@@ -78,7 +78,6 @@ export async function buyToken(
     });
 
     const poolInfo = await getPoolInfoByRpc(
-      connection,
       raydium,
       NATIVE_MINT,
       options.mint,

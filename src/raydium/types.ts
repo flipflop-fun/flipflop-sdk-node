@@ -1,5 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 
 export interface AddLiquidityOptions {
   rpc: string;
@@ -86,10 +86,9 @@ export interface LPDisplayResponse {
 }
 
 export interface DisplayPoolOptions {
-  connection: Connection;
+  rpc: string;
   tokenAMint: PublicKey;
   tokenBMint: PublicKey;
-  rpc?: string;
 }
 
 export interface DisplayPoolResponse {
@@ -159,4 +158,44 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
+}
+
+export interface EstimateSlippageOptions {
+  action: "buy" | "sell";
+  rpc: string;
+  tokenAMint: PublicKey; // token mint
+  tokenBMint: PublicKey; // wsol mint
+  tokenAAmount: number;
+}
+
+export interface EstimateSlippageResponse {
+    currentPrice: number;
+    baseReserve: BN;
+    quoteReserve: BN;
+    tokenAAmount: BN;
+    slippage: number;
+    k: BN;
+    requiredAmount?: BN; // 买入时是需要支付的数量，卖出时是能获得的数量
+    actualPrice?: number; // 实际交易价格
+    action?: 'buy' | 'sell'; // 操作类型
+}
+
+export interface EstimateVolumeOptions {
+  action: "buy" | "sell";
+  rpc: string;
+  tokenAMint: PublicKey; // token mint
+  tokenBMint: PublicKey; // wsol mint
+  maxSlippage: number;
+}
+
+export interface EstimateVolumeResponse {
+    currentPrice: number;
+    baseReserve: BN;
+    quoteReserve: BN;
+    tokenAAmount: BN;
+    maxSlippage: number;
+    k: BN;
+    requiredAmount?: BN; // 买入时是需要支付的数量，卖出时是能获得的数量
+    actualPrice?: number; // 实际交易价格
+    action?: 'buy' | 'sell'; // 操作类型
 }

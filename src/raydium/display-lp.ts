@@ -54,7 +54,6 @@ export async function displayLP(
 
     // 使用与remove-liquidity.ts相同的方式获取池子信息
     const poolInfo = await getPoolInfoByRpc(
-      connection,
       raydium,
       NATIVE_MINT,
       mint,

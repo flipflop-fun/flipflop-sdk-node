@@ -47,7 +47,6 @@ export async function sellToken(
 
     // 获取池子信息
     const poolInfo = await getPoolInfoByRpc(
-      connection,
       raydium,
       options.mint,
       NATIVE_MINT,
