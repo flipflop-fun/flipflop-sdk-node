@@ -49,37 +49,25 @@ export const ORACLE_SEED = Buffer.from(
 );
 
 export const TOKEN_PARAMS = {
-  // ######
   standard: {
     // must be same as program default params
     targetEras: new BN(1),
-    epochesPerEra: new BN("250"),
+    epochesPerEra: new BN("200"),
     targetSecondsPerEpoch: new BN("2000"),
     reduceRatio: new BN("50"),
     initialMintSize: new BN("20000000000000"),
     initialTargetMintSizePerEpoch: new BN("200000000000000"),
-    feeRate: new BN("200000000"),
+    feeRate: new BN("250000000"),
     liquidityTokensRatio: new BN("20"),
   },
-  // "meme": { // config for mainnet, 125 - 557 SOL
-  //     targetEras: new BN(1),
-  //     epochesPerEra: new BN('250'),
-  //     targetSecondsPerEpoch: new BN('2000'),
-  //     reduceRatio: new BN('75'),
-  //     initialMintSize: new BN('100000000000000'),
-  //     initialTargetMintSizePerEpoch: new BN('1000000000000000'),
-  //     feeRate: new BN('50000000'),
-  //     liquidityTokensRatio: new BN('20'),
-  // },
   meme: {
-    // config for mainnet, 100 - 557 SOL
     targetEras: new BN(1),
-    epochesPerEra: new BN("250"),
+    epochesPerEra: new BN("200"),
     targetSecondsPerEpoch: new BN("2000"),
     reduceRatio: new BN("75"),
     initialMintSize: new BN("100000000000000"),
     initialTargetMintSizePerEpoch: new BN("1000000000000000"),
-    feeRate: new BN("40000000"),
+    feeRate: new BN("50000000"),
     liquidityTokensRatio: new BN("20"),
   },
 };
