@@ -11,8 +11,8 @@ describe('buy token', () => {
       const buyOptions = {
         rpc: 'http://127.0.0.1:8899',
         mint: new PublicKey(TOKEN_MINT), // USDC mint for testing
-        amount: 100, // 5000 tokens
-        slippage: 5, // 1% slippage
+        amount: 10000, // 5000 tokens
+        slippage: 1, // 1% slippage
         payer: loadKeypairFromBase58(OPERATOR_KEYPAIR),
       };
 

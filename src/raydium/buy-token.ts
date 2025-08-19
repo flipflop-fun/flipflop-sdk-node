@@ -132,6 +132,28 @@ export async function buyToken(
       outputMint,
       payer.publicKey
     );
+
+    // Record initial balances before transaction
+    const initialSolBalance = await connection.getBalance(payer.publicKey);
+    
+    let initialTokenBalance = new BN(0);
+    try {
+      const tokenAccountInfo = await getAccount(connection, payerOutputTokenAccount);
+      initialTokenBalance = new BN(tokenAccountInfo.amount.toString());
+    } catch (error) {
+      // Token account doesn't exist, balance is 0
+      initialTokenBalance = new BN(0);
+    }
+
+    let initialWsolBalance = new BN(0);
+    try {
+      const wsolAccountInfo = await getAccount(connection, payerInputTokenAccount);
+      initialWsolBalance = new BN(wsolAccountInfo.amount.toString());
+    } catch (error) {
+      // WSOL account doesn't exist, balance is 0
+      initialWsolBalance = new BN(0);
+    }
+
     // console.log('token account', payerInputTokenAccount.toBase58());
     // console.log('wsol account', payerOutputTokenAccount.toBase58());
     const [authority] = PublicKey.findProgramAddressSync(
@@ -277,7 +299,16 @@ export async function buyToken(
 
     await connection.confirmTransaction(sig, "confirmed");
 
-    // 添加清理 WSOL 账户的逻辑
+    // Record token balance after swap but before WSOL cleanup
+    let finalTokenBalance = new BN(0);
+    try {
+      const tokenAccountInfo = await getAccount(connection, payerOutputTokenAccount);
+      finalTokenBalance = new BN(tokenAccountInfo.amount.toString());
+    } catch (error) {
+      finalTokenBalance = new BN(0);
+    }
+
+    // Clean up WSOL account logic
     try {
       const wsolAccountInfo = await getAccount(
         connection,
@@ -319,12 +350,28 @@ export async function buyToken(
       };
     }
 
+    // Record final balances after WSOL cleanup
+    const finalSolBalance = await connection.getBalance(payer.publicKey);
+
+    // Calculate actual amounts based on balance differences
+    const actualTokenAmount = finalTokenBalance.sub(initialTokenBalance);
+    const actualSolSpent = new BN(initialSolBalance).sub(new BN(finalSolBalance));
+    
+    // Convert to human readable format
+    const tokenDecimals = 9; // Assuming 9 decimals, you might want to fetch this from token metadata
+    const actualTokenAmountDecimal = actualTokenAmount.toNumber() / Math.pow(10, tokenDecimals);
+    const actualSolAmountDecimal = actualSolSpent.toNumber() / LAMPORTS_PER_SOL;
+
     return {
       success: true,
       data: {
         mintAddress: new PublicKey(options.mint),
         solAmount: maxAmountIn.toNumber() / LAMPORTS_PER_SOL,
         tokenAmount: options.amount,
+        cost: maxAmountIn.toNumber() / LAMPORTS_PER_SOL / options.amount,
+        actualSolAmount: actualSolAmountDecimal,
+        actualTokenAmount: actualTokenAmountDecimal,
+        actualCost: actualSolAmountDecimal / actualTokenAmountDecimal,
         poolAddress: poolInfoData.poolAddress,
         txId: sig,
       },

@@ -45,7 +45,11 @@ export interface BuyTokenResponse {
   mintAddress: PublicKey;
   solAmount: number;
   tokenAmount: number;
+  cost: number;
   poolAddress: PublicKey;
+  actualSolAmount: number;
+  actualTokenAmount: number;
+  actualCost: number;
   txId: string;
 }
 
@@ -150,6 +154,10 @@ export interface SellTokenResponse {
   mintAddress: PublicKey;
   tokenAmount: number;
   solAmount: number;
+  cost: number;
+  actualTokenAmount: number;
+  actualSolAmount: number;
+  actualCost: number;
   poolAddress: PublicKey;
   txId: string;
 }

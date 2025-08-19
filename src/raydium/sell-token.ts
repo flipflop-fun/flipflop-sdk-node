@@ -159,6 +159,29 @@ export async function sellToken(
       seller.publicKey
     );
 
+    // Record initial balances before transaction
+    const initialSolBalance = await connection.getBalance(seller.publicKey);
+    
+    let initialTokenBalance = new BN(0);
+    try {
+      const tokenAccountInfo = await getAccount(connection, sellerInputTokenAccount);
+      initialTokenBalance = new BN(tokenAccountInfo.amount.toString());
+    } catch (error) {
+      return {
+        success: false,
+        message: `Token account not found for mint ${options.mint}. Please ensure you have tokens to sell.`,
+      };
+    }
+
+    let initialWsolBalance = new BN(0);
+    try {
+      const wsolAccountInfo = await getAccount(connection, sellerOutputTokenAccount);
+      initialWsolBalance = new BN(wsolAccountInfo.amount.toString());
+    } catch (error) {
+      // WSOL account doesn't exist, balance is 0
+      initialWsolBalance = new BN(0);
+    }
+
     // 检查 WSOL 账户是否存在，如果不存在则创建
     try {
       await getAccount(connection, sellerOutputTokenAccount);
@@ -228,6 +251,16 @@ export async function sellToken(
 
     await connection.confirmTransaction(sig, "confirmed");
 
+    // Record token balance after swap but before WSOL cleanup
+    let finalTokenBalance = new BN(0);
+    try {
+      const tokenAccountInfo = await getAccount(connection, sellerInputTokenAccount);
+      finalTokenBalance = new BN(tokenAccountInfo.amount.toString());
+    } catch (error) {
+      finalTokenBalance = new BN(0);
+    }
+
+    // Clean up WSOL account logic
     try {
       const wsolAccountInfo = await getAccount(
         connection,
@@ -261,7 +294,6 @@ export async function sellToken(
 
         const closeSig = await connection.sendTransaction(closeTx);
         await connection.confirmTransaction(closeSig, "confirmed");
-        // console.log(`WSOL account cleaned up, ${wsolBalance.toNumber() / LAMPORTS_PER_SOL} SOL converted back`);
       }
     } catch (error) {
       return {
@@ -270,12 +302,28 @@ export async function sellToken(
       };
     }
 
+    // Record final balances after WSOL cleanup
+    const finalSolBalance = await connection.getBalance(seller.publicKey);
+
+    // Calculate actual amounts based on balance differences
+    const actualTokenSold = initialTokenBalance.sub(finalTokenBalance);
+    const actualSolReceived = new BN(finalSolBalance).sub(new BN(initialSolBalance));
+    
+    // Convert to human readable format
+    const tokenDecimals = 9; // Assuming 9 decimals, you might want to fetch this from token metadata
+    const actualTokenSoldDecimal = actualTokenSold.toNumber() / Math.pow(10, tokenDecimals);
+    const actualSolReceivedDecimal = actualSolReceived.toNumber() / LAMPORTS_PER_SOL;
+
     return {
       success: true,
       data: {
         mintAddress: options.mint,
         tokenAmount: options.amount,
-        solAmount: minAmountOut.div(new BN(LAMPORTS_PER_SOL)).toNumber(),
+        solAmount: minAmountOut.toNumber() / LAMPORTS_PER_SOL,
+        cost: minAmountOut.toNumber() / LAMPORTS_PER_SOL / options.amount,
+        actualTokenAmount: actualTokenSoldDecimal,
+        actualSolAmount: actualSolReceivedDecimal,
+        actualCost: actualSolReceivedDecimal / actualTokenSoldDecimal,
         poolAddress: poolInfoData.poolAddress,
         txId: sig,
       },

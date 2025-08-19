@@ -11,8 +11,8 @@ describe('sell token', () => {
       const sellOptions = {
         rpc: 'http://127.0.0.1:8899',
         mint: new PublicKey(TOKEN_MINT), // Token mint for testing
-        amount: 50, // 50 tokens to sell
-        slippage: 5, // 5% slippage
+        amount: 500, // 50 tokens to sell
+        slippage: 1, // 5% slippage
         seller: loadKeypairFromBase58(OPERATOR_KEYPAIR),
       };
 
