@@ -310,9 +310,8 @@ export async function sellToken(
     const actualSolReceived = new BN(finalSolBalance).sub(new BN(initialSolBalance));
     
     // Convert to human readable format
-    const tokenDecimals = 9; // Assuming 9 decimals, you might want to fetch this from token metadata
-    const actualTokenSoldDecimal = actualTokenSold.toNumber() / Math.pow(10, tokenDecimals);
-    const actualSolReceivedDecimal = actualSolReceived.toNumber() / LAMPORTS_PER_SOL;
+    const actualTokenSoldDecimal = Math.abs(actualTokenSold.toNumber() / LAMPORTS_PER_SOL);
+    const actualSolReceivedDecimal = Math.abs(actualSolReceived.toNumber() / LAMPORTS_PER_SOL);
 
     return {
       success: true,
