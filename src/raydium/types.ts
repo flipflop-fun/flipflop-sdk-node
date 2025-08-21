@@ -50,6 +50,7 @@ export interface BuyTokenResponse {
   actualSolAmount: number;
   actualTokenAmount: number;
   actualCost: number;
+  amountFrom: "txhash" | "balance";
   txId: string;
 }
 
@@ -159,6 +160,7 @@ export interface SellTokenResponse {
   actualSolAmount: number;
   actualCost: number;
   poolAddress: PublicKey;
+  amountFrom: "txhash" | "balance";
   txId: string;
 }
 

@@ -25,6 +25,7 @@ import {
 } from "@raydium-io/raydium-sdk-v2";
 import { AUTH_SEED } from "../constants";
 import { ApiResponse, SellTokenOptions, SellTokenResponse } from "./types";
+import { parseSwapAmountsFromTransaction } from "./buy-token";
 
 export async function sellToken(
   options: SellTokenOptions
@@ -251,16 +252,47 @@ export async function sellToken(
 
     await connection.confirmTransaction(sig, "confirmed");
 
-    // Record token balance after swap but before WSOL cleanup
-    let finalTokenBalance = new BN(0);
-    try {
-      const tokenAccountInfo = await getAccount(connection, sellerInputTokenAccount);
-      finalTokenBalance = new BN(tokenAccountInfo.amount.toString());
-    } catch (error) {
-      finalTokenBalance = new BN(0);
+    // 使用交易日志解析获取实际交易量
+    const parsedAmounts = await parseSwapAmountsFromTransaction(
+      connection,
+      sig,
+      inputMint // 卖出的代币
+    );
+
+    let actualTokenSold: number;
+    let actualSolReceived: number;
+    let amountFrom: "txhash" | "balance";
+
+    if (parsedAmounts) {
+      actualTokenSold = parsedAmounts.actualTokenChange;
+      actualSolReceived = parsedAmounts.actualSolChange;
+      amountFrom = "txhash";
+    } else {
+      // Record final balances after transaction
+      const finalTokenBalance = await (async () => {
+        try {
+          const tokenAccountInfo = await getAccount(connection, sellerInputTokenAccount);
+          return new BN(tokenAccountInfo.amount.toString());
+        } catch (error) {
+          return new BN(0); // Account might be closed if balance is 0
+        }
+      })();
+
+      const finalWsolBalance = await (async () => {
+        try {
+          const wsolAccountInfo = await getAccount(connection, sellerOutputTokenAccount);
+          return new BN(wsolAccountInfo.amount.toString());
+        } catch (error) {
+          return new BN(0);
+        }
+      })();
+
+      // Calculate actual amounts based on balance differences
+      actualTokenSold = initialTokenBalance.sub(finalTokenBalance).abs().div(new BN(LAMPORTS_PER_SOL)).toNumber();
+      actualSolReceived = finalWsolBalance.sub(initialWsolBalance).abs().div(new BN(LAMPORTS_PER_SOL)).toNumber();
+      amountFrom = "balance";
     }
 
-    // Clean up WSOL account logic
     try {
       const wsolAccountInfo = await getAccount(
         connection,
@@ -302,17 +334,6 @@ export async function sellToken(
       };
     }
 
-    // Record final balances after WSOL cleanup
-    const finalSolBalance = await connection.getBalance(seller.publicKey);
-
-    // Calculate actual amounts based on balance differences
-    const actualTokenSold = initialTokenBalance.sub(finalTokenBalance);
-    const actualSolReceived = new BN(finalSolBalance).sub(new BN(initialSolBalance));
-    
-    // Convert to human readable format
-    const actualTokenSoldDecimal = Math.abs(actualTokenSold.toNumber() / LAMPORTS_PER_SOL);
-    const actualSolReceivedDecimal = Math.abs(actualSolReceived.toNumber() / LAMPORTS_PER_SOL);
-
     return {
       success: true,
       data: {
@@ -320,9 +341,10 @@ export async function sellToken(
         tokenAmount: options.amount,
         solAmount: minAmountOut.toNumber() / LAMPORTS_PER_SOL,
         cost: minAmountOut.toNumber() / LAMPORTS_PER_SOL / options.amount,
-        actualTokenAmount: actualTokenSoldDecimal,
-        actualSolAmount: actualSolReceivedDecimal,
-        actualCost: actualSolReceivedDecimal / actualTokenSoldDecimal,
+        actualTokenAmount: actualTokenSold,
+        actualSolAmount: actualSolReceived,
+        actualCost: actualSolReceived / actualTokenSold,
+        amountFrom,
         poolAddress: poolInfoData.poolAddress,
         txId: sig,
       },

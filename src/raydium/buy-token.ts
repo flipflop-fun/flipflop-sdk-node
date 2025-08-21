@@ -33,6 +33,83 @@ import {
   DisplayPoolResponse,
 } from "./types";
 
+// 添加解析交易日志的辅助函数
+export async function parseSwapAmountsFromTransaction(
+  connection: Connection,
+  signature: string,
+  mint: PublicKey
+): Promise<{ actualTokenChange: number; actualSolChange: number } | null> {
+  try {
+    // 获取交易详情
+    const transaction = await connection.getParsedTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+      commitment: "confirmed",
+    });
+
+    if (!transaction || !transaction.meta) {
+      console.warn("Transaction not found or no meta data");
+      return null;
+    }
+
+    let actualTokenChange = 0;
+    let actualSolChange = 0;
+
+    // 解析预余额和后余额变化
+    if (transaction.meta.preTokenBalances && transaction.meta.postTokenBalances) {
+      const preBalances = transaction.meta.preTokenBalances;
+      const postBalances = transaction.meta.postTokenBalances;
+      // 查找代币余额变化
+      for (const postBalance of postBalances) {
+        if (postBalance.mint === mint.toString()) {
+          const preBalance = preBalances.find(
+            (pre) => pre.accountIndex === postBalance.accountIndex
+          );
+          const preAmount = preBalance && preBalance.uiTokenAmount.uiAmount ? preBalance.uiTokenAmount.uiAmount : 0;
+          const postAmount = postBalance.uiTokenAmount.uiAmount || 0;
+          actualTokenChange = Math.abs(postAmount - preAmount);
+        }
+      }
+
+      // 查找 WSOL 余额变化
+      for (const preBalance of preBalances) {
+        if (preBalance.mint === NATIVE_MINT.toString()) {
+          const postBalance = postBalances.find(
+            (post) => post.accountIndex === preBalance.accountIndex
+          );
+          if (postBalance) {
+            const preAmount = preBalance.uiTokenAmount.uiAmount || 0;
+            const postAmount = postBalance.uiTokenAmount.uiAmount || 0;
+            actualSolChange = Math.abs(preAmount - postAmount);
+          }
+        }
+      }
+    }
+
+    // 如果通过代币余额解析失败，尝试解析交易日志
+    if (actualTokenChange === 0 || actualSolChange === 0) {
+      const logs = transaction.meta.logMessages || [];
+      
+      // 查找包含交换信息的日志
+      for (const log of logs) {
+        // 查找 Raydium 交换日志模式
+        if (log.includes("Program log: swap") || log.includes("Program log: Swap")) {
+          // 尝试从日志中提取数量信息
+          const amountMatch = log.match(/amount_in:\s*(\d+)|amount_out:\s*(\d+)/g);
+          if (amountMatch) {
+            console.log("Found swap log:", log);
+            // 这里可以根据具体的日志格式进一步解析
+          }
+        }
+      }
+    }
+
+    return { actualTokenChange, actualSolChange };
+  } catch (error) {
+    console.error("Error parsing transaction:", error);
+    return null;
+  }
+}
+
 export async function buyToken(
   options: BuyTokenOptions
 ): Promise<ApiResponse<BuyTokenResponse>> {
@@ -299,16 +376,39 @@ export async function buyToken(
 
     await connection.confirmTransaction(sig, "confirmed");
 
-    // Record token balance after swap but before WSOL cleanup
-    let finalTokenBalance = new BN(0);
-    try {
-      const tokenAccountInfo = await getAccount(connection, payerOutputTokenAccount);
-      finalTokenBalance = new BN(tokenAccountInfo.amount.toString());
-    } catch (error) {
-      finalTokenBalance = new BN(0);
+    const parsedAmounts = await parseSwapAmountsFromTransaction(
+      connection,
+      sig,
+      outputMint
+    );
+
+    let actualTokenAmount: number;
+    let actualSolSpent: number;
+    let amountFrom: "txhash" | "balance";
+
+    if (parsedAmounts) {
+      actualTokenAmount = parsedAmounts.actualTokenChange;
+      actualSolSpent = parsedAmounts.actualSolChange;
+      amountFrom = "txhash";
+    } else {
+      // Record token balance after swap but before WSOL cleanup
+      let finalTokenBalance = new BN(0);
+      try {
+        const tokenAccountInfo = await getAccount(connection, payerOutputTokenAccount);
+        finalTokenBalance = new BN(tokenAccountInfo.amount.toString());
+      } catch (error) {
+        finalTokenBalance = new BN(0);
+      }
+
+      // Record final balances after WSOL cleanup for fallback calculation
+      const finalSolBalance = await connection.getBalance(payer.publicKey);
+      
+      actualTokenAmount = finalTokenBalance.sub(initialTokenBalance).abs().div(new BN(LAMPORTS_PER_SOL)).toNumber();
+      actualSolSpent = new BN(initialSolBalance).sub(new BN(finalSolBalance)).abs().div(new BN(LAMPORTS_PER_SOL)).toNumber();
+      amountFrom = "balance";
     }
 
-    // Clean up WSOL account logic
+    // Clean up WSOL account logic (existing code)
     try {
       const wsolAccountInfo = await getAccount(
         connection,
@@ -349,18 +449,7 @@ export async function buyToken(
         message: `Error while unwrap WSOL: ${(error as any).message}`,
       };
     }
-
-    // Record final balances after WSOL cleanup
-    const finalSolBalance = await connection.getBalance(payer.publicKey);
-
-    // Calculate actual amounts based on balance differences
-    const actualTokenAmount = finalTokenBalance.sub(initialTokenBalance);
-    const actualSolSpent = new BN(initialSolBalance).sub(new BN(finalSolBalance));
     
-    // Convert to human readable format
-    const actualTokenAmountDecimal = Math.abs(actualTokenAmount.toNumber() / LAMPORTS_PER_SOL);
-    const actualSolAmountDecimal = Math.abs(actualSolSpent.toNumber() / LAMPORTS_PER_SOL);
-
     return {
       success: true,
       data: {
@@ -368,9 +457,10 @@ export async function buyToken(
         solAmount: maxAmountIn.toNumber() / LAMPORTS_PER_SOL,
         tokenAmount: options.amount,
         cost: maxAmountIn.toNumber() / LAMPORTS_PER_SOL / options.amount,
-        actualSolAmount: actualSolAmountDecimal,
-        actualTokenAmount: actualTokenAmountDecimal,
-        actualCost: actualSolAmountDecimal / actualTokenAmountDecimal,
+        actualSolAmount: actualSolSpent,
+        actualTokenAmount: actualTokenAmount,
+        actualCost: actualSolSpent / actualTokenAmount,
+        amountFrom,
         poolAddress: poolInfoData.poolAddress,
         txId: sig,
       },
