@@ -52,7 +52,7 @@ export async function displayLP(
       disableLoadToken: true,
     });
 
-    // 使用与remove-liquidity.ts相同的方式获取池子信息
+    // Use the same method as remove-liquidity.ts to get pool information
     const poolInfo = await getPoolInfoByRpc(
       raydium,
       NATIVE_MINT,
@@ -92,10 +92,10 @@ export async function displayLP(
         };
       }
 
-      // 转换为可读格式
+      // Convert to readable format
       lpTokenBalance = lpToken.data.amount;
 
-      // 计算池子份额
+      // Calculate pool share
       const totalLpSupply = poolInfoData.lpAmount;
       if (totalLpSupply > ZERO) {
         const sharePercent =

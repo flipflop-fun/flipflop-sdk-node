@@ -60,7 +60,7 @@ export async function estimateVolume(
     const quoteReserve = new BN(result.data.quoteReserve);
     const currentPrice = Number(baseReserve) / Number(quoteReserve);
 
-    // 使用恒定乘积公式和滑点限制计算最大可交易数量
+    // Use constant product formula and slippage limit to calculate maximum tradeable amount
     const k = baseReserve.mul(quoteReserve);
     const maxSlippageDecimal = options.maxSlippage / 100;
     
@@ -70,23 +70,23 @@ export async function estimateVolume(
     const PRECISION_FACTOR = new BN(10).pow(new BN(18));
 
     if (options.action === 'buy') {
-      // 购买操作：计算在给定滑点下最多能购买多少 quote 代币
-      // 目标价格 = 当前价格 * (1 + 滑点)
+      // Buy operation: calculate maximum quote tokens that can be bought at given slippage
+      // Target price = current price * (1 + slippage)
       const targetPrice = currentPrice * (1 + maxSlippageDecimal);
       
-      // 使用高精度计算：newQuoteReserve = sqrt(k / targetPrice)
-      // 为了避免精度丢失，我们将 targetPrice 转换为 BN 并使用整数运算
-      // 将 targetPrice 放大到合适的精度（使用 1e18 作为精度因子）
+      // Use high precision calculation: newQuoteReserve = sqrt(k / targetPrice)
+      // To avoid precision loss, convert targetPrice to BN and use integer arithmetic
+      // Scale targetPrice to appropriate precision (using 1e18 as precision factor)
       const targetPriceBN = new BN(Math.floor(targetPrice * 1e18));
       
-      // 计算 k * PRECISION_FACTOR / targetPriceBN
+      // Calculate k * PRECISION_FACTOR / targetPriceBN
       const numerator = k.mul(PRECISION_FACTOR);
       const quotient = numerator.div(targetPriceBN);
       
-      // 使用牛顿法计算平方根
+      // Use Newton's method to calculate square root
       const newQuoteReserve = sqrt(quotient);
       
-      // 确保新的 quote 储备量小于当前储备量
+      // Ensure new quote reserve is less than current reserve
       if (newQuoteReserve.gte(quoteReserve)) {
         return {
           success: false,
@@ -100,21 +100,21 @@ export async function estimateVolume(
       actualPrice = Number(requiredAmount) / Number(maxTokenAAmount);
       
     } else { // sell
-      // 卖出操作：计算在给定滑点下最多能卖出多少 quote 代币
-      // 目标价格 = 当前价格 * (1 - 滑点)
+      // Sell operation: calculate maximum quote tokens that can be sold at given slippage
+      // Target price = current price * (1 - slippage)
       const targetPrice = currentPrice * (1 - maxSlippageDecimal);
       
-      // 使用高精度计算：newQuoteReserve = sqrt(k / targetPrice)
+      // Use high precision calculation: newQuoteReserve = sqrt(k / targetPrice)
       const targetPriceBN = new BN(Math.floor(targetPrice * 1e18));
       
-      // 计算 k * PRECISION_FACTOR / targetPriceBN
+      // Calculate k * PRECISION_FACTOR / targetPriceBN
       const numerator = k.mul(PRECISION_FACTOR);
       const quotient = numerator.div(targetPriceBN);
       
-      // 使用牛顿法计算平方根
+      // Use Newton's method to calculate square root
       const newQuoteReserve = sqrt(quotient);
       
-      // 确保新的 quote 储备量大于当前储备量
+      // Ensure new quote reserve is greater than current reserve
       if (newQuoteReserve.lte(quoteReserve)) {
         return {
           success: false,
@@ -128,7 +128,7 @@ export async function estimateVolume(
       actualPrice = Number(requiredAmount) / Number(maxTokenAAmount);
     }
     
-    // 验证计算结果
+    // Verify calculation results
     const calculatedSlippage = (Math.abs(actualPrice - currentPrice) / currentPrice) * 100;
     
     return {
@@ -154,17 +154,17 @@ export async function estimateVolume(
 }
 
 
-// 使用牛顿法计算 BN 的平方根
+// Calculate square root of BN using Newton's method
 function sqrt(value: BN): BN {
   if (value.isZero()) {
     return new BN(0);
   }
   
-  // 初始猜测值
+  // Initial guess value
   let x = value;
   let y = value.add(new BN(1)).div(new BN(2));
   
-  // 牛顿法迭代
+  // Newton's method iteration
   while (y.lt(x)) {
     x = y;
     y = x.add(value.div(x)).div(new BN(2));

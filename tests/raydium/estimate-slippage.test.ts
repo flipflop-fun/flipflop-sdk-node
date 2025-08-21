@@ -16,7 +16,7 @@ describe('estimate slippage', () => {
         rpc,
         tokenAMint,
         tokenBMint,
-        tokenAAmount: 1_000_000, // 购买 50 个代币
+        tokenAAmount: 1_000_000,
         action: 'buy' as const,
       };
 
@@ -45,7 +45,7 @@ describe('estimate slippage', () => {
         rpc,
         tokenAMint,
         tokenBMint,
-        tokenAAmount: 1_000_000, // 卖出 50 个代币
+        tokenAAmount: 1_000_000,
         action: 'sell' as const,
       };
 
@@ -87,11 +87,9 @@ describe('estimate slippage', () => {
       if (result && result.success && result.data) {
         const { currentPrice, actualPrice, requiredAmount, tokenAAmount } = result.data;
         
-        // 验证实际价格计算是否正确
         const calculatedPrice = Number(requiredAmount) / Number(tokenAAmount);
         expect(Math.abs(Number(actualPrice) - calculatedPrice)).toBeLessThan(0.0001);
         
-        // 验证滑点计算是否合理
         const expectedSlippage = (Math.abs(Number(actualPrice) - currentPrice) / currentPrice) * 100;
         expect(Math.abs(result.data.slippage - expectedSlippage)).toBeLessThan(0.01);
         

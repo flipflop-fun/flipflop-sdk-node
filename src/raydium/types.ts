@@ -185,9 +185,9 @@ export interface EstimateSlippageResponse {
     tokenAAmount: BN;
     slippage: number;
     k: BN;
-    requiredAmount?: BN; // 买入时是需要支付的数量，卖出时是能获得的数量
-    actualPrice?: number; // 实际交易价格
-    action?: 'buy' | 'sell'; // 操作类型
+    requiredAmount?: BN; // Amount to pay when buying, amount to receive when selling
+    actualPrice?: number; // Actual trading price
+    action?: 'buy' | 'sell'; // Operation type
 }
 
 export interface EstimateVolumeOptions {
@@ -205,7 +205,7 @@ export interface EstimateVolumeResponse {
     tokenAAmount: BN;
     maxSlippage: number;
     k: BN;
-    requiredAmount?: BN; // 买入时是需要支付的数量，卖出时是能获得的数量
-    actualPrice?: number; // 实际交易价格
-    action?: 'buy' | 'sell'; // 操作类型
+    requiredAmount?: BN; // Amount to pay when buying, amount to receive when selling
+    actualPrice?: number; // Actual trading price
+    action?: 'buy' | 'sell'; // Operation type
 }

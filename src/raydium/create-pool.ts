@@ -89,7 +89,7 @@ export const createPool = async (
       new BN(LAMPORTS_PER_SOL)
     );
 
-    // 检查哪个是 WSOL (NATIVE_MINT)
+    // Check which token is WSOL (NATIVE_MINT)
     const isTokenAWSOL = options.mintA.equals(NATIVE_MINT);
     const isTokenBWSOL = options.mintB.equals(NATIVE_MINT);
 
@@ -100,7 +100,7 @@ export const createPool = async (
       };
     }
 
-    // 确定 WSOL 相关的参数
+    // Determine WSOL-related parameters
     const wsolMint = isTokenAWSOL ? options.mintA : options.mintB;
     const wsolAmount = isTokenAWSOL ? amountA : amountB;
     const tokenMint = isTokenAWSOL ? options.mintB : options.mintA;
@@ -121,13 +121,13 @@ export const createPool = async (
     const tokenATA = isTokenAWSOL ? ataB : ataA;
     const instructions = [];
 
-    // 添加计算预算指令
+    // Add compute budget instructions
     instructions.push(
       ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })
     );
 
-    // 检查并创建代币账户（非 WSOL）
+    // Check and create token account (non-WSOL)
     try {
       await getAccount(connection, tokenATA);
     } catch (error) {
@@ -145,7 +145,7 @@ export const createPool = async (
       }
     }
 
-    // 检查代币余额是否足够
+    // Check if token balance is sufficient
     try {
       const tokenAccountInfo = await getAccount(connection, tokenATA);
       const currentTokenBalance = new BN(tokenAccountInfo.amount.toString());
@@ -169,13 +169,13 @@ export const createPool = async (
       throw error;
     }
 
-    // ###### WSOL 账户检查和创建逻辑 ######
+    // ###### WSOL account check and creation logic ######
 
-    // 检查用户的 SOL 余额
+    // Check user's SOL balance
     const userSolBalance = await connection.getBalance(
       options.creator.publicKey
     );
-    const requiredSolForFees = 0.02 * LAMPORTS_PER_SOL; // 预留 0.02 SOL 作为交易费用
+    const requiredSolForFees = 0.02 * LAMPORTS_PER_SOL; // Reserve 0.02 SOL for transaction fees
     const totalRequiredSol = wsolAmount.add(new BN(requiredSolForFees));
 
     if (userSolBalance < totalRequiredSol.toNumber()) {
@@ -189,14 +189,14 @@ export const createPool = async (
       };
     }
 
-    // 检查 WSOL 账户是否存在
+    // Check if WSOL account exists
     try {
       const wsolAccountInfo = await getAccount(connection, wsolATA);
-      // WSOL 账户存在，检查余额是否足够
+      // WSOL account exists, check if balance is sufficient
       const currentWsolBalance = new BN(wsolAccountInfo.amount.toString());
 
       if (currentWsolBalance.lt(wsolAmount)) {
-        // WSOL 余额不足，需要包装更多 SOL
+        // WSOL balance insufficient, need to wrap more SOL
         const additionalSolNeeded = wsolAmount.sub(currentWsolBalance);
 
         console.log(
@@ -205,7 +205,7 @@ export const createPool = async (
           } SOL`
         );
 
-        // 添加包装 SOL 的指令
+        // Add SOL wrapping instructions
         instructions.push(
           SystemProgram.transfer({
             fromPubkey: options.creator.publicKey,
@@ -217,14 +217,14 @@ export const createPool = async (
       }
     } catch (error) {
       if (error instanceof TokenAccountNotFoundError) {
-        // WSOL 账户不存在，需要创建并包装 SOL
+        // WSOL account does not exist, need to create and wrap SOL
         console.log(
           `Creating WSOL account and wrapping ${
             wsolAmount.toNumber() / LAMPORTS_PER_SOL
           } SOL`
         );
 
-        // 创建 WSOL 关联代币账户
+        // Create WSOL associated token account
         instructions.push(
           createAssociatedTokenAccountInstruction(
             options.creator.publicKey,
@@ -234,7 +234,7 @@ export const createPool = async (
           )
         );
 
-        // 转移 SOL 到 WSOL 账户并同步
+        // Transfer SOL to WSOL account and sync
         instructions.push(
           SystemProgram.transfer({
             fromPubkey: options.creator.publicKey,
@@ -294,7 +294,7 @@ export const createPool = async (
       txVersion: TxVersion.LEGACY,
     } as CreateCpmmPoolParam<TxVersion>;
 
-    // 如果有预处理指令，先执行它们
+    // If there are preprocessing instructions, execute them first
     if (instructions.length > 0) {
       const { blockhash: prepareBlockhash } =
         await connection.getLatestBlockhash();
@@ -350,16 +350,16 @@ export const createPool = async (
       };
     }
 
-    // ###### 创建池子成功后，清理多余的 WSOL ######
+    // ###### Clean up excess WSOL after successful pool creation ######
     try {
       const wsolAccountInfo = await getAccount(connection, wsolATA);
       const remainingWsolBalance = new BN(wsolAccountInfo.amount.toString());
 
       if (remainingWsolBalance.gt(new BN(0))) {
-        // 如果还有剩余的 WSOL，将其转换回 SOL
+        // If there is remaining WSOL, convert it back to SOL
         const closeInstructions = [];
 
-        // 创建关闭 WSOL 账户的指令，这会将剩余的 WSOL 转换回 SOL
+        // Create instruction to close WSOL account, which converts remaining WSOL back to SOL
         closeInstructions.push(
           createCloseAccountInstruction(
             wsolATA,
@@ -389,7 +389,7 @@ export const createPool = async (
       }
     } catch (error) {
       console.log("Error cleaning up WSOL account:", error);
-      // 不抛出错误，因为主要交易已经成功
+      // Don't throw error since the main transaction has already succeeded
     }
 
     return poolCreationResult;

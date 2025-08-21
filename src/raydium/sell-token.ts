@@ -36,7 +36,7 @@ export async function sellToken(
     const networkType = getNetworkType(options.rpc);
     const config = CONFIGS[networkType];
 
-    // 初始化 Raydium SDK
+    // Initialize Raydium SDK
     const raydium = await Raydium.load({
       connection,
       owner: seller,
@@ -46,7 +46,7 @@ export async function sellToken(
       blockhashCommitment: "finalized",
     });
 
-    // 获取池子信息
+    // Get pool information
     const poolInfo = await getPoolInfoByRpc(
       raydium,
       options.mint,
@@ -68,16 +68,16 @@ export async function sellToken(
     const poolInfoData = poolInfo.data;
 
     const isToken0Sol = poolInfoData.mintA.equals(NATIVE_MINT);
-    const inputMint = new PublicKey(options.mint); // 输入是要卖出的代币
-    const outputMint = NATIVE_MINT; // 输出是SOL
-    const inputVault = isToken0Sol ? poolInfoData.vaultB : poolInfoData.vaultA; // 代币的vault
-    const outputVault = isToken0Sol ? poolInfoData.vaultA : poolInfoData.vaultB; // SOL的vault
+    const inputMint = new PublicKey(options.mint); // Input is the token to sell
+    const outputMint = NATIVE_MINT; // Output is SOL
+    const inputVault = isToken0Sol ? poolInfoData.vaultB : poolInfoData.vaultA; // Token vault
+    const outputVault = isToken0Sol ? poolInfoData.vaultA : poolInfoData.vaultB; // SOL vault
 
     const amountIn = new BN(options.amount).mul(
       new BN(LAMPORTS_PER_SOL)
     );
 
-    // 获取池子储备量
+    // Get pool reserves
     const tokenReserve = isToken0Sol
       ? new BN(poolInfoData.quoteReserve)
       : new BN(poolInfoData.baseReserve);
@@ -85,21 +85,21 @@ export async function sellToken(
       ? new BN(poolInfoData.baseReserve)
       : new BN(poolInfoData.quoteReserve);
 
-    // 使用 CPMM 公式计算预期输出数量：amountOut = (amountIn * reserveOut) / (reserveIn + amountIn)
+    // Use CPMM formula to calculate expected output amount: amountOut = (amountIn * reserveOut) / (reserveIn + amountIn)
     const amountOutExpected = amountIn
       .mul(solReserve)
       .div(tokenReserve.add(amountIn));
 
-    // 应用滑点保护（默认 5% 滑点）
+    // Apply slippage protection (default 5% slippage)
     const slippagePercent = options.slippage || 5;
     const slippageMultiplier = new BN(10000 - slippagePercent * 100); // 5% = 500 basis points
     const minAmountOut = amountOutExpected
       .mul(slippageMultiplier)
       .div(new BN(10000));
 
-    // 检查用户 SOL 余额（用于交易费用）
+    // Check user SOL balance (for transaction fees)
     const userSolBalance = await connection.getBalance(seller.publicKey);
-    const requiredSolForFees = 0.01 * LAMPORTS_PER_SOL; // 预留 0.01 SOL 作为交易费用
+    const requiredSolForFees = 0.01 * LAMPORTS_PER_SOL; // Reserve 0.01 SOL for transaction fees
     if (userSolBalance < requiredSolForFees) {
       return {
         success: false,
@@ -111,19 +111,17 @@ export async function sellToken(
 
     const instructions = [];
 
-    // 添加计算预算指令
+    // Add compute budget instructions
     instructions.push(
       ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })
     );
 
-    // 获取用户的代币账户地址
     const sellerInputTokenAccount = await getAssociatedTokenAddress(
       inputMint,
       seller.publicKey
     );
 
-    // 检查代币账户是否存在并检查余额
     try {
       const tokenAccountInfo = await getAccount(
         connection,
@@ -154,15 +152,12 @@ export async function sellToken(
       };
     }
 
-    // 获取或创建 WSOL 账户
+    // Get or create WSOL account
     const sellerOutputTokenAccount = await getAssociatedTokenAddress(
       NATIVE_MINT,
       seller.publicKey
     );
 
-    // Record initial balances before transaction
-    const initialSolBalance = await connection.getBalance(seller.publicKey);
-    
     let initialTokenBalance = new BN(0);
     try {
       const tokenAccountInfo = await getAccount(connection, sellerInputTokenAccount);
@@ -183,12 +178,12 @@ export async function sellToken(
       initialWsolBalance = new BN(0);
     }
 
-    // 检查 WSOL 账户是否存在，如果不存在则创建
+    // Check if WSOL account exists, create if not
     try {
       await getAccount(connection, sellerOutputTokenAccount);
     } catch (error) {
       if (error instanceof TokenAccountNotFoundError) {
-        // 创建 WSOL 关联代币账户
+        // Create WSOL associated token account
         instructions.push(
           createAssociatedTokenAccountInstruction(
             seller.publicKey,
@@ -205,13 +200,13 @@ export async function sellToken(
       }
     }
 
-    // 构建权限地址
+    // Build authority address
     const [authority] = PublicKey.findProgramAddressSync(
       [Buffer.from(AUTH_SEED)],
       poolInfoData.programId
     );
 
-    // 构建交换指令
+    // Build swap instruction
     const swapInstruction = makeSwapCpmmBaseInInstruction(
       poolInfoData.programId, // programId
       seller.publicKey, // payer
@@ -234,7 +229,7 @@ export async function sellToken(
 
     instructions.push(swapInstruction);
 
-    // 构建并发送交易
+    // Build and send transaction
     const { blockhash } = await connection.getLatestBlockhash();
     const message = new TransactionMessage({
       payerKey: seller.publicKey,
@@ -252,11 +247,11 @@ export async function sellToken(
 
     await connection.confirmTransaction(sig, "confirmed");
 
-    // 使用交易日志解析获取实际交易量
+    // Parse actual transaction amounts from transaction logs
     const parsedAmounts = await parseSwapAmountsFromTransaction(
       connection,
       sig,
-      inputMint // 卖出的代币
+      inputMint // Token being sold
     );
 
     let actualTokenSold: number;
@@ -301,10 +296,10 @@ export async function sellToken(
       const wsolBalance = new BN(wsolAccountInfo.amount.toString());
 
       if (wsolBalance.gt(new BN(0))) {
-        // 如果有 WSOL 余额，将其转换回 SOL
+        // If there's WSOL balance, convert it back to SOL
         const closeInstructions = [];
 
-        // 创建关闭 WSOL 账户的指令，这会将 WSOL 转换回 SOL
+        // Create instruction to close WSOL account, which converts WSOL back to SOL
         closeInstructions.push(
           createCloseAccountInstruction(
             sellerOutputTokenAccount,

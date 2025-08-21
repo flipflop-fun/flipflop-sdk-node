@@ -16,7 +16,7 @@ describe('estimateVolume', () => {
     tokenAMint,
     tokenBMint,
     action: 'buy',
-    maxSlippage: 10, // 10% 滑点
+    maxSlippage: 10, // 10% slippage
   };
 
   it('should estimate maximum buy volume with 5% slippage', async () => {
@@ -27,7 +27,7 @@ describe('estimateVolume', () => {
     
     if (result?.success && result.data) {
       expect(result.data.tokenAAmount).toBeDefined();
-      expect(result.data.maxSlippage).toBeLessThanOrEqual(10.1); // 允许小误差
+      expect(result.data.maxSlippage).toBeLessThanOrEqual(10.1); // Allow small error
       expect(result.data.requiredAmount).toBeDefined();
       expect(result.data.actualPrice).toBeGreaterThan(0);
       expect(result.data.action).toBe('buy');
@@ -56,7 +56,7 @@ describe('estimateVolume', () => {
     
     if (result?.success && result.data) {
       expect(result.data.tokenAAmount).toBeDefined();
-      expect(result.data.maxSlippage).toBeLessThanOrEqual(10.1); // 允许小误差
+      expect(result.data.maxSlippage).toBeLessThanOrEqual(10.1); // Allow small error
       expect(result.data.requiredAmount).toBeDefined();
       expect(result.data.actualPrice).toBeGreaterThan(0);
       expect(result.data.action).toBe('sell');
@@ -70,7 +70,7 @@ describe('estimateVolume', () => {
   }, 30000);
 
   it('should handle extreme slippage values', async () => {
-    // 测试极低滑点（可能无法实现）
+    // Test extremely low slippage (may not be achievable)
     const lowSlippageOptions: EstimateVolumeOptions = {
       ...baseOptions,
       maxSlippage: 0.01, // 0.01%
@@ -78,7 +78,7 @@ describe('estimateVolume', () => {
     
     const result = await estimateVolume(lowSlippageOptions);
     
-    // 可能成功也可能失败，取决于池子的流动性
+    // May succeed or fail depending on pool liquidity
     if (result?.success) {
       expect(result.data?.maxSlippage).toBeLessThanOrEqual(0.02);
     } else {

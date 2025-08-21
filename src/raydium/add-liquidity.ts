@@ -271,15 +271,15 @@ async function doAddLiquidityInstruction(
   const amountMaxA = isSolFirst ? maxSolAmount : maxTokenAmount;
   const amountMaxB = isSolFirst ? maxTokenAmount : maxSolAmount;
 
-  // 添加指令数组
+  // Add instructions array
   const instructions = [];
 
-  // 检查并创建 WSOL 账户
+  // Check and create WSOL account
   try {
     const wsolAccountInfo = await getAccount(connection, userSolAccount);
-    // 检查 WSOL 账户余额是否足够
+    // Check if WSOL account balance is sufficient
     if (new BN(wsolAccountInfo.amount.toString()).lt(maxSolAmount)) {
-      // WSOL 余额不足，需要包装更多 SOL
+      // WSOL balance insufficient, need to wrap more SOL
       const additionalSolNeeded = maxSolAmount.sub(
         new BN(wsolAccountInfo.amount.toString())
       );
@@ -293,7 +293,7 @@ async function doAddLiquidityInstruction(
       );
     }
   } catch (error) {
-    // WSOL 账户不存在，创建账户并包装所需的 SOL
+    // WSOL account does not exist, create account and wrap required SOL
     instructions.push(
       createAssociatedTokenAccountInstruction(
         payer.publicKey,
@@ -310,7 +310,7 @@ async function doAddLiquidityInstruction(
     );
   }
 
-  // 检查并创建目标代币账户
+  // Check and create target token account
   try {
     await getAccount(connection, userTokenAccount);
   } catch (error) {
@@ -324,7 +324,7 @@ async function doAddLiquidityInstruction(
     );
   }
 
-  // 检查并创建 LP 代币账户
+  // Check and create LP token account
   try {
     await getAccount(connection, userLpAccount);
   } catch (error) {
@@ -352,7 +352,7 @@ async function doAddLiquidityInstruction(
   }
   // estimatedLpAmount = estimatedLpAmount.mul(new BN(98)).div(new BN(100));
 
-  // 添加计算预算指令
+  // Add compute budget instructions
   instructions.push(
     ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 })

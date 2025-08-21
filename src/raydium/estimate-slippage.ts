@@ -60,7 +60,7 @@ export async function estimateSlippage(
     const currentPrice = Number(baseReserve) / Number(quoteReserve);
     const tokenAAmount = new BN(options.tokenAAmount).mul(new BN(LAMPORTS_PER_SOL));
     
-    // 使用恒定乘积公式计算滑点
+    // Use constant product formula to calculate slippage
     const k = baseReserve.mul(quoteReserve);
     
     let newBaseReserve: BN;
@@ -69,8 +69,8 @@ export async function estimateSlippage(
     let actualPrice: number;
     
     if (options.action === 'buy') {
-      // 购买操作：用 base 代币购买 quote 代币
-      // tokenAAmount 是要购买的 quote 代币数量
+      // Buy operation: use base tokens to buy quote tokens
+      // tokenAAmount is the amount of quote tokens to buy
       newQuoteReserve = quoteReserve.sub(tokenAAmount);
       if (newQuoteReserve.lte(new BN(0))) {
         return {
@@ -80,11 +80,11 @@ export async function estimateSlippage(
       }
       
       newBaseReserve = k.div(newQuoteReserve);
-      requiredAmount = newBaseReserve.sub(baseReserve); // 需要支付的 base 代币
+      requiredAmount = newBaseReserve.sub(baseReserve); // Base tokens to pay
       actualPrice = Number(requiredAmount) / Number(tokenAAmount); // base/quote      
     } else { // sell
-      // 卖出操作：卖出 quote 代币换取 base 代币
-      // tokenAAmount 是要卖出的 quote 代币数量
+      // Sell operation: sell quote tokens for base tokens
+      // tokenAAmount is the amount of quote tokens to sell
       newQuoteReserve = quoteReserve.add(tokenAAmount);
       newBaseReserve = k.div(newQuoteReserve);
       
@@ -95,11 +95,11 @@ export async function estimateSlippage(
         };
       }
       
-      requiredAmount = baseReserve.sub(newBaseReserve); // 能获得的 base 代币
+      requiredAmount = baseReserve.sub(newBaseReserve); // Base tokens to receive
       actualPrice = Number(requiredAmount) / Number(tokenAAmount); // base/quote
     }
     
-    // 计算滑点
+    // Calculate slippage
     const slippage = (Math.abs(actualPrice - currentPrice) / currentPrice) * 100;
     
     return {
@@ -111,9 +111,9 @@ export async function estimateSlippage(
             slippage,
             tokenAAmount,
             k,
-            requiredAmount, // 买入时是需要支付的数量，卖出时是能获得的数量
-            actualPrice, // 实际交易价格
-            action: options.action, // 添加操作类型到返回结果
+            requiredAmount, // Amount to pay when buying, amount to receive when selling
+            actualPrice, // Actual trading price
+            action: options.action, // Add operation type to return result
         } as EstimateSlippageResponse,
     }
   } catch (error) {

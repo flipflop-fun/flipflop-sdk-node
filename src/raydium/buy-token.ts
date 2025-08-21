@@ -33,14 +33,14 @@ import {
   DisplayPoolResponse,
 } from "./types";
 
-// 添加解析交易日志的辅助函数
+// Add helper function to parse transaction logs
 export async function parseSwapAmountsFromTransaction(
   connection: Connection,
   signature: string,
   mint: PublicKey
 ): Promise<{ actualTokenChange: number; actualSolChange: number } | null> {
   try {
-    // 获取交易详情
+    // Get transaction details
     const transaction = await connection.getParsedTransaction(signature, {
       maxSupportedTransactionVersion: 0,
       commitment: "confirmed",
@@ -54,11 +54,11 @@ export async function parseSwapAmountsFromTransaction(
     let actualTokenChange = 0;
     let actualSolChange = 0;
 
-    // 解析预余额和后余额变化
+    // Parse pre and post balance changes
     if (transaction.meta.preTokenBalances && transaction.meta.postTokenBalances) {
       const preBalances = transaction.meta.preTokenBalances;
       const postBalances = transaction.meta.postTokenBalances;
-      // 查找代币余额变化
+      // Find token balance changes
       for (const postBalance of postBalances) {
         if (postBalance.mint === mint.toString()) {
           const preBalance = preBalances.find(
@@ -70,7 +70,7 @@ export async function parseSwapAmountsFromTransaction(
         }
       }
 
-      // 查找 WSOL 余额变化
+      // Find WSOL balance changes
       for (const preBalance of preBalances) {
         if (preBalance.mint === NATIVE_MINT.toString()) {
           const postBalance = postBalances.find(
@@ -85,19 +85,19 @@ export async function parseSwapAmountsFromTransaction(
       }
     }
 
-    // 如果通过代币余额解析失败，尝试解析交易日志
+    // If parsing through token balances fails, try parsing transaction logs
     if (actualTokenChange === 0 || actualSolChange === 0) {
       const logs = transaction.meta.logMessages || [];
       
-      // 查找包含交换信息的日志
+      // Find logs containing swap information
       for (const log of logs) {
-        // 查找 Raydium 交换日志模式
+        // Find Raydium swap log patterns
         if (log.includes("Program log: swap") || log.includes("Program log: Swap")) {
-          // 尝试从日志中提取数量信息
+          // Try to extract amount information from logs
           const amountMatch = log.match(/amount_in:\s*(\d+)|amount_out:\s*(\d+)/g);
           if (amountMatch) {
             console.log("Found swap log:", log);
-            // 这里可以根据具体的日志格式进一步解析
+            // Further parsing can be done based on specific log format
           }
         }
       }
@@ -176,14 +176,12 @@ export async function buyToken(
     const poolInfoData = poolInfo.data as DisplayPoolResponse;
 
     const isToken0Sol = poolInfoData.mintA.equals(NATIVE_MINT);
-    const inputMint = NATIVE_MINT; // 输入是SOL
-    const outputMint = new PublicKey(options.mint); // 输出是目标代币
-    const inputVault = isToken0Sol ? poolInfoData.vaultA : poolInfoData.vaultB; // SOL的vault
-    const outputVault = isToken0Sol ? poolInfoData.vaultB : poolInfoData.vaultA; // 代币的vault
+    const inputMint = NATIVE_MINT; // WSOL
+    const outputMint = new PublicKey(options.mint);
+    const inputVault = isToken0Sol ? poolInfoData.vaultA : poolInfoData.vaultB;
+    const outputVault = isToken0Sol ? poolInfoData.vaultB : poolInfoData.vaultA;
 
-    // 使用BN直接计算，避免精度丢失
     const amountOut = new BN(options.amount).mul(new BN(LAMPORTS_PER_SOL));
-    // const maxAmountIn = new BN(options.maxSolAmount).mul(new BN(LAMPORTS_PER_SOL)); // SOL 有 9 位小数
     const solReserve = isToken0Sol
       ? new BN(poolInfoData.baseReserve)
       : new BN(poolInfoData.quoteReserve);
@@ -257,15 +255,13 @@ export async function buyToken(
         connection,
         payerInputTokenAccount
       );
-      // 检查 WSOL 账户余额是否足够
+
       const currentWsolBalance = new BN(wsolAccountInfo.amount.toString());
       if (currentWsolBalance.lt(maxAmountIn)) {
-        // WSOL 余额不足，需要包装更多 SOL
         const additionalSolNeeded = maxAmountIn.sub(currentWsolBalance);
 
-        // 检查用户的 SOL 余额是否足够
         const solBalance = await connection.getBalance(payer.publicKey);
-        const requiredSolForTx = additionalSolNeeded.add(new BN(5000)); // 预留交易费用
+        const requiredSolForTx = additionalSolNeeded.add(new BN(5000));
 
         if (solBalance < requiredSolForTx.toNumber()) {
           return {
@@ -278,7 +274,6 @@ export async function buyToken(
           };
         }
 
-        // 添加包装 SOL 的指令
         instructions.push(
           SystemProgram.transfer({
             fromPubkey: payer.publicKey,
@@ -289,11 +284,9 @@ export async function buyToken(
         );
       }
     } catch (error: any) {
-      // WSOL 账户不存在的情况
       if (error.name === "TokenAccountNotFoundError") {
-        // 检查用户的 SOL 余额是否足够创建账户并包装
         const solBalance = await connection.getBalance(payer.publicKey);
-        const requiredSolForTx = maxAmountIn.add(new BN(5000)); // 预留交易费用
+        const requiredSolForTx = maxAmountIn.add(new BN(5000));
 
         if (solBalance < requiredSolForTx.toNumber()) {
           return {
@@ -314,7 +307,7 @@ export async function buyToken(
             inputMint
           )
         );
-        // 创建WSOL账户并wrap所需的SOL
+
         instructions.push(
           SystemProgram.transfer({
             fromPubkey: payer.publicKey,
@@ -417,10 +410,10 @@ export async function buyToken(
       const remainingWsolBalance = new BN(wsolAccountInfo.amount.toString());
 
       if (remainingWsolBalance.gt(new BN(0))) {
-        // 如果还有剩余的 WSOL，将其转换回 SOL
+        // If there is remaining WSOL, convert it back to SOL
         const closeInstructions = [];
 
-        // 创建关闭 WSOL 账户的指令，这会将剩余的 WSOL 转换回 SOL
+        // Create instruction to close WSOL account, which converts remaining WSOL back to SOL
         closeInstructions.push(
           createCloseAccountInstruction(
             payerInputTokenAccount,

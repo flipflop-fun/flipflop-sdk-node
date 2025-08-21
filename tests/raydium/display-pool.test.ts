@@ -13,7 +13,7 @@ describe('display pool', () => {
         connection,
         tokenAMint: new PublicKey(TOKEN_MINT), // USDC mint for testing
         tokenBMint: new PublicKey(NATIVE_MINT.toBase58()), // SOL mint
-        rpc: 'http://127.0.0.1:8899', // 明确指定 RPC 用于网络类型判断
+        rpc: 'http://127.0.0.1:8899',
       };
 
       // Act

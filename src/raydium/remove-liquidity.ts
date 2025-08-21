@@ -136,7 +136,6 @@ export async function removeLiquidity(
   }
 }
 
-// 在 doRemoveLiquidityInstruction 函数中修复
 async function doRemoveLiquidityInstruction(
   connection: Connection,
   poolInfo: DisplayPoolResponse,
@@ -149,14 +148,14 @@ async function doRemoveLiquidityInstruction(
     new PublicKey(poolInfo.programId)
   );
 
-  // 确保mint排序正确
+  // Ensure mint sorting is correct
   const mintA = new PublicKey(poolInfo.mintA);
   const mintB = new PublicKey(poolInfo.mintB);
   const [mint0, mint1] =
     compareMints(mintA, mintB) < 0 ? [mintA, mintB] : [mintB, mintA];
   const isAFirst = mint0.equals(mintA);
 
-  // 获取正确的用户代币账户
+  // Get correct user token accounts
   const userTokenAccountA = await getAssociatedTokenAddress(
     mint0,
     payer.publicKey
@@ -170,7 +169,7 @@ async function doRemoveLiquidityInstruction(
     payer.publicKey
   );
 
-  // 计算预期获得的代币数量（基于池子比例）
+  // Calculate expected token amounts (based on pool ratio)
   const poolTokenAReserve = new BN(poolInfo.baseReserve || "0");
   const poolTokenBReserve = new BN(poolInfo.quoteReserve || "0");
   const totalLpSupply = new BN(poolInfo.lpAmount);
@@ -187,7 +186,7 @@ async function doRemoveLiquidityInstruction(
       .div(totalLpSupply);
   }
 
-  // 根据排序调整预期数量
+  // Adjust expected amounts based on sorting
   const expectedAmount0 = isAFirst
     ? expectedTokenAAmount
     : expectedTokenBAmount;
@@ -203,7 +202,7 @@ async function doRemoveLiquidityInstruction(
   const minAmount0 = expectedAmount0.mul(slippageMultiplier).div(new BN(10000));
   const minAmount1 = expectedAmount1.mul(slippageMultiplier).div(new BN(10000));
 
-  // 根据排序调整vault
+  // Adjust vaults based on sorting
   const vault0 = isAFirst
     ? new PublicKey(poolInfo.vaultA)
     : new PublicKey(poolInfo.vaultB);
@@ -221,10 +220,10 @@ async function doRemoveLiquidityInstruction(
   //   mint1: mint1.toString(),
   // });
 
-  // 检查并创建必要的代币账户
+  // Check and create necessary token accounts
   const instructions = [];
   
-  // 检查 tokenA 账户（可能是 WSOL）
+  // Check tokenA account (might be WSOL)
   try {
     await getAccount(connection, userTokenAccountA);
   } catch (error: any) {
@@ -240,7 +239,7 @@ async function doRemoveLiquidityInstruction(
     }
   }
   
-  // 检查 tokenB 账户（可能是 WSOL）
+  // Check tokenB account (might be WSOL)
   try {
     await getAccount(connection, userTokenAccountB);
   } catch (error: any) {
@@ -256,33 +255,33 @@ async function doRemoveLiquidityInstruction(
     }
   }
   
-  // 创建withdraw指令
+  // Create withdraw instruction
   const withdrawIx = makeWithdrawCpmmInInstruction(
     new PublicKey(poolInfo.programId), // programId
     payer.publicKey, // owner
     authority, // authority
     new PublicKey(poolInfo.poolAddress), // poolId
     userLpAccount, // lpTokenAccount
-    userTokenAccountA, // tokenAccountA (正确的账户)
-    userTokenAccountB, // tokenAccountB (正确的账户)
-    vault0, // vaultA (正确排序)
-    vault1, // vaultB (正确排序)
-    mint0, // mintA (正确排序)
-    mint1, // mintB (正确排序)
+    userTokenAccountA, // tokenAccountA (correct account)
+    userTokenAccountB, // tokenAccountB (correct account)
+    vault0, // vaultA (correct sorting)
+    vault1, // vaultB (correct sorting)
+    mint0, // mintA (correct sorting)
+    mint1, // mintB (correct sorting)
     new PublicKey(poolInfo.mintLp), // lpMint
     lpTokenAmountBN, // lpAmount
-    minAmount0, // minimumAmountA (正确排序)
-    minAmount1 // minimumAmountB (正确排序)
+    minAmount0, // minimumAmountA (correct sorting)
+    minAmount1 // minimumAmountB (correct sorting)
   );
 
   instructions.push(withdrawIx);
 
-  // 构建并发送交易
+  // Build and send transaction
   const { blockhash } = await connection.getLatestBlockhash();
   const message = new TransactionMessage({
     payerKey: payer.publicKey,
     recentBlockhash: blockhash,
-    instructions, // 使用包含创建账户指令的数组
+    instructions, // Use array containing account creation instructions
   }).compileToV0Message();
 
   const tx = new VersionedTransaction(message);
@@ -291,9 +290,9 @@ async function doRemoveLiquidityInstruction(
   const sig = await connection.sendTransaction(tx);
   await connection.confirmTransaction(sig, "confirmed");
 
-  // 添加 WSOL 清理逻辑
+  // Add WSOL cleanup logic
   try {
-    // 检查是否有 WSOL 需要清理
+    // Check if there is WSOL that needs cleanup
     const wsolAccount = mint0.equals(NATIVE_MINT) ? userTokenAccountA : 
                      mint1.equals(NATIVE_MINT) ? userTokenAccountB : null;
     
@@ -302,7 +301,7 @@ async function doRemoveLiquidityInstruction(
       const wsolBalance = new BN(wsolAccountInfo.amount.toString());
       
       if (wsolBalance.gt(new BN(0))) {
-        // 创建关闭 WSOL 账户的指令，将剩余 WSOL 转换回 SOL
+        // Create instruction to close WSOL account, converting remaining WSOL back to SOL
         const closeInstructions = [
           createCloseAccountInstruction(
             wsolAccount,
@@ -327,7 +326,7 @@ async function doRemoveLiquidityInstruction(
     }
   } catch (error) {
     console.warn(`Warning: Failed to cleanup WSOL account: ${(error as any).message}`);
-    // 不抛出错误，因为主要的移除流动性操作已经成功
+    // Don't throw error since the main remove liquidity operation has already succeeded
   }
 
   return {
@@ -352,13 +351,11 @@ export const getLpTokenAmount = async (
     };
   }
 
-  // 获取用户的LP代币账户地址
   const userLpTokenAccount = await getAssociatedTokenAddress(
     lpTokenMint,
     owner
   );
 
-  // 获取用户LP代币账户信息
   const userLpAccountInfo = await connection.getAccountInfo(userLpTokenAccount);
   if (!userLpAccountInfo) {
     return {
@@ -367,11 +364,9 @@ export const getLpTokenAmount = async (
     };
   }
 
-  // 解析LP代币余额
   const userLpAccountData = AccountLayout.decode(userLpAccountInfo.data);
   const userLpBalance = new BN(userLpAccountData.amount.toString());
 
-  // 获取LP代币的小数位数
   const lpMintAccountInfo = await connection.getAccountInfo(lpTokenMint);
   if (!lpMintAccountInfo) {
     return {
