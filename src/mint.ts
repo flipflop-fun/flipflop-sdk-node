@@ -117,14 +117,13 @@ export const mintToken = async (
       options.lookupTableAccount
         ? options.lookupTableAccount
         : new PublicKey(config.lookupTableAccount),
-      protocolFeeAccount
+      protocolFeeAccount,
+      config.allowOwnerOffCurveForProtocolFeeAccount,
     );
   } catch (error) {
     return {
       success: false,
-      message: `Mint operation failed: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
+      message: `Mint operation failed: ${error}`,
     };
   }
 };

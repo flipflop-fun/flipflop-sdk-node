@@ -208,6 +208,7 @@ export interface NetworkConfig {
   cpSwapProgram: string;
   cpSwapConfigAddress: string;
   createPoolFeeReceive: string;
+  allowOwnerOffCurveForProtocolFeeAccount: boolean;
   irysGatewayUrl: string;
   apiBaseUrl: string;
 }

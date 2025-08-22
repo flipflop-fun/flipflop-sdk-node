@@ -393,7 +393,8 @@ export const mintBy = async (
   systemConfigAccount: PublicKey,
   connection: Connection,
   lookupTableAddress: PublicKey,
-  protocolFeeAccount: PublicKey
+  protocolFeeAccount: PublicKey,
+  allowOwnerOffCurveForProtocolFeeAccount: boolean,
 ): Promise<ApiResponse<MintTokenResponse>> => {
   // check balance SOL
   let balance = await getSolanaBalance(connection, account.publicKey);
@@ -456,9 +457,9 @@ export const mintBy = async (
     };
   }
 
-  const beforeBalance = (
-    await connection.getTokenAccountBalance(destination.address)
-  ).value.uiAmount;
+  // const beforeBalance = (
+  //   await connection.getTokenAccountBalance(destination.address)
+  // ).value.uiAmount;
 
   const codeHashInReferralAccount =
     await program.account.tokenReferralData.fetch(referralAccount);
@@ -474,7 +475,7 @@ export const mintBy = async (
     account,
     NATIVE_MINT,
     protocolFeeAccount,
-    false,
+    allowOwnerOffCurveForProtocolFeeAccount,
     undefined,
     undefined,
     TOKEN_PROGRAM_ID
