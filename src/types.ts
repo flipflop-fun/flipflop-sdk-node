@@ -59,6 +59,7 @@ export interface GetMintDataResponse {
   quantityMintedEpoch: number;
   targetMintSizeEpoch: number;
   initialMintSize: number;
+  initialTargetMintSizePerEpoch: number;
   epochesPerEra: number;
   targetSecondsPerEpoch: number;
   reduceRatio: number;
@@ -116,6 +117,7 @@ export interface ConfigAccountData {
   maxSupply: number;
   targetEras: number;
   initialMintSize: number;
+  initialTargetMintSizePerEpoch: number;
   epochesPerEra: number;
   targetSecondsPerEpoch: number;
   reduceRatio: number;
@@ -187,6 +189,16 @@ export interface MintTokenResponse {
   tx: string;
   owner: PublicKey;
   tokenAccount: PublicKey;
+}
+
+export interface RefundTokenOptions {
+  rpc: string;
+  mint: PublicKey;
+  owner: Keypair;
+}
+
+export interface RefundTokenResponse {
+  tx: string;
 }
 
 export interface InitSystemConfigOptions {

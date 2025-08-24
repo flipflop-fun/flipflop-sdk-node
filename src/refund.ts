@@ -1,24 +1,21 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
   CONFIG_DATA_SEED,
-  REFERRAL_SEED,
   SYSTEM_CONFIG_SEEDS,
-  REFERRAL_CODE_SEED,
 } from "./constants";
 import {
   cleanTokenName,
   getMetadataByMint,
-  getURCDetails,
   initProvider,
-  mintBy,
+  refund,
 } from "./utils";
 import { CONFIGS, getNetworkType } from "./config";
-import { MintTokenOptions, MintTokenResponse } from "./types";
+import { RefundTokenOptions, RefundTokenResponse } from "./types";
 import { ApiResponse } from "./raydium/types";
 
-export const mintToken = async (
-  options: MintTokenOptions
-): Promise<ApiResponse<MintTokenResponse>> => {
+export const refundToken = async (
+  options: RefundTokenOptions
+): Promise<ApiResponse<RefundTokenResponse>> => {
   try {
     if (!options.rpc) {
       return {
@@ -27,7 +24,7 @@ export const mintToken = async (
       };
     }
 
-    if (!options.minter) {
+    if (!options.owner) {
       return {
         success: false,
         message: "Missing minter parameter",
@@ -41,33 +38,11 @@ export const mintToken = async (
       };
     }
 
-    if (!options.urc) {
-      return {
-        success: false,
-        message: "Missing urc parameter",
-      };
-    }
-
     const rpc = new Connection(options.rpc);
-    const urc = options.urc;
     const mintAccount = new PublicKey(options.mint);
     const config = CONFIGS[getNetworkType(options.rpc)];
-
-    // Load keypair and create wallet (keypair-file takes priority)
-    const minter = options.minter;
-
-    const { program, provider, programId } = await initProvider(rpc, minter);
-
-    const referrerAccount = await getURCDetails(rpc, program, urc);
-    const [referralAccount] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from(REFERRAL_SEED),
-        mintAccount.toBuffer(),
-        referrerAccount.referrerMain.toBuffer(),
-      ],
-      programId
-    );
-
+    const owner = options.owner;
+    const { program, provider, programId } = await initProvider(rpc, owner);
     const [systemConfigAccount] = PublicKey.findProgramAddressSync(
       [
         Buffer.from(SYSTEM_CONFIG_SEEDS),
@@ -86,11 +61,6 @@ export const mintToken = async (
       programId
     );
 
-    const [codeHash] = PublicKey.findProgramAddressSync(
-      [Buffer.from(REFERRAL_CODE_SEED), Buffer.from(urc)],
-      programId
-    );
-
     const metadataData = await getMetadataByMint(rpc, mintAccount);
     if (!metadataData.success) {
       return {
@@ -102,20 +72,14 @@ export const mintToken = async (
     const _name = cleanTokenName(metadataData.data.name);
     const _symbol = cleanTokenName(metadataData.data.symbol);
 
-    return await mintBy(
+    return await refund(
       provider,
       program,
+      owner,
       mintAccount,
-      configAccount,
-      referralAccount,
-      referrerAccount.referrerMain, // referrer
       { name: _name, symbol: _symbol },
-      codeHash,
-      minter, // minter
+      configAccount,
       systemConfigAccount,
-      options.lookupTableAccount
-        ? options.lookupTableAccount
-        : new PublicKey(config.lookupTableAccount),
       protocolFeeAccount,
       config.allowOwnerOffCurveForProtocolFeeAccount,
     );

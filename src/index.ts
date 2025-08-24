@@ -1,6 +1,7 @@
 // Main SDK entry point
 export { launchToken } from "./launch";
 export { mintToken } from "./mint";
+export { refundToken } from "./refund";
 export { setUrc } from "./set-urc";
 export { getMintData } from "./display-mint";
 export { getUrcData } from "./display-urc";

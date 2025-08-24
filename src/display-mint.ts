@@ -87,6 +87,7 @@ export const getMintData = async (
         targetEras: configAccountInfo.targetEras,
         supply: configAccountInfo.supply,
         initialMintSize: configAccountInfo.initialMintSize,
+        initialTargetMintSizePerEpoch: configAccountInfo.initialTargetMintSizePerEpoch,
         epochesPerEra: configAccountInfo.epochesPerEra,
         targetSecondsPerEpoch: configAccountInfo.targetSecondsPerEpoch,
         reduceRatio: (100 - configAccountInfo.reduceRatio * 100) / 100,

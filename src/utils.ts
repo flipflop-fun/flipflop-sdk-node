@@ -29,9 +29,11 @@ import {
   MintTokenResponse,
   ProviderAndProgram,
   ReferralAccountData,
+  RefundTokenResponse,
   RemainingAccount,
 } from "./types";
 import {
+  createAssociatedTokenAccountInstruction,
   createSyncNativeInstruction,
   getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
@@ -50,6 +52,7 @@ import {
   REFERRAL_CODE_SEED,
   REFUND_SEEDS,
   RENT_PROGRAM_ID,
+  SYSTEM_CONFIG_SEEDS,
   TOKEN_METADATA_PROGRAM_ID,
 } from "./constants";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
@@ -210,6 +213,11 @@ export const parseConfigData = async (
             .toNumber(),
           targetEras: configData.targetEras,
           initialMintSize: new BN(configData.initialMintSize)
+            .div(new BN("1000000000"))
+            .toNumber(),
+          initialTargetMintSizePerEpoch: new BN(
+            configData.initialTargetMintSizePerEpoch
+          )
             .div(new BN("1000000000"))
             .toNumber(),
           epochesPerEra: new BN(configData.epochesPerEra).toNumber(),
@@ -391,13 +399,12 @@ export const mintBy = async (
   codeHash: PublicKey,
   account: Keypair,
   systemConfigAccount: PublicKey,
-  connection: Connection,
   lookupTableAddress: PublicKey,
   protocolFeeAccount: PublicKey,
   allowOwnerOffCurveForProtocolFeeAccount: boolean,
 ): Promise<ApiResponse<MintTokenResponse>> => {
   // check balance SOL
-  let balance = await getSolanaBalance(connection, account.publicKey);
+  let balance = await getSolanaBalance(provider.connection, account.publicKey);
   if (balance == 0) {
     return {
       success: false,
@@ -405,8 +412,9 @@ export const mintBy = async (
     };
   }
 
+// ######
   const destination = await getOrCreateAssociatedTokenAccount(
-    connection,
+    provider.connection,
     account,
     mintAccount,
     account.publicKey,
@@ -438,7 +446,7 @@ export const mintBy = async (
   );
 
   const programId = new PublicKey(
-    CONFIGS[getNetworkType(connection.rpcEndpoint)].programId
+    CONFIGS[getNetworkType(provider.connection.rpcEndpoint)].programId
   );
   const [refundAccount] = PublicKey.findProgramAddressSync(
     [
@@ -449,7 +457,7 @@ export const mintBy = async (
     programId
   );
 
-  const accountInfo = await connection.getAccountInfo(referrerAta);
+  const accountInfo = await provider.connection.getAccountInfo(referrerAta);
   if (accountInfo === null) {
     return {
       success: false,
@@ -502,7 +510,7 @@ export const mintBy = async (
     [token0Mint, token1Mint] = [token1Mint, token0Mint];
     [token0Program, token1Program] = [token1Program, token0Program];
   }
-  const rpcUrl = connection.rpcEndpoint;
+  const rpcUrl = provider.connection.rpcEndpoint;
   const network = getNetworkType(rpcUrl);
   const cpSwapProgram = new PublicKey(CONFIGS[network].cpSwapProgram);
   const cpSwapConfigAddress = new PublicKey(
@@ -693,7 +701,7 @@ export const mintBy = async (
       .instruction();
 
     // Create versioned transaction with LUT
-    const accountInfo = await connection.getAccountInfo(lookupTableAddress);
+    const accountInfo = await provider.connection.getAccountInfo(lookupTableAddress);
     if (!accountInfo) {
       return {
         success: false,
@@ -708,13 +716,13 @@ export const mintBy = async (
     const messageV0 = new VersionedTransaction(
       new TransactionMessage({
         payerKey: account.publicKey,
-        recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+        recentBlockhash: (await provider.connection.getLatestBlockhash()).blockhash,
         instructions: [ix0, ix],
       }).compileToV0Message([lookupTable])
     );
     const result = await processVersionedTransaction(
       messageV0,
-      connection,
+      provider.connection,
       account,
       "confirmed"
     );
@@ -1001,3 +1009,91 @@ export const createLookupTable = async (
 
   return lookupTable;
 };
+
+export const refund = async (
+  provider: AnchorProvider,
+  program: Program<FairMintToken>,
+  account: Keypair,
+  mint: PublicKey,
+  tokenMetadata: { name: string; symbol: string },
+  configAccount: PublicKey,
+  systemConfigAccount: PublicKey,
+  protocolFeeAccount: PublicKey,
+  allowOwnerOffCurveForProtocolFeeAccount: boolean,
+): Promise<ApiResponse<RefundTokenResponse>> => {
+  const [refundAccount] = PublicKey.findProgramAddressSync([Buffer.from(REFUND_SEEDS), mint.toBuffer(), account.publicKey.toBuffer()], program.programId);
+  const refundAccountData = await program.account.tokenRefundData.fetch(refundAccount);
+  if (refundAccountData.owner.toBase58() !== account.publicKey.toBase58()) {
+    return {
+      success: false,
+      message: 'Only User Account Allowed'
+    }
+  }
+  const tokenAta = await getAssociatedTokenAddress(mint, account.publicKey, false, TOKEN_PROGRAM_ID);
+  const payerWsolAta = getAssociatedTokenAddressSync(NATIVE_MINT, account.publicKey, false, TOKEN_PROGRAM_ID);
+  const protocolWsolAta = getAssociatedTokenAddressSync(NATIVE_MINT, protocolFeeAccount, allowOwnerOffCurveForProtocolFeeAccount, TOKEN_PROGRAM_ID);
+  const wsolVaultAta = await getAssociatedTokenAddress(NATIVE_MINT, configAccount, true, TOKEN_PROGRAM_ID);
+  const tokenVault = await getAssociatedTokenAddress(mint, configAccount, true, TOKEN_PROGRAM_ID);
+
+  const refundAccounts = {
+    mint,
+    refundAccount,
+    configAccount,
+    tokenAta,
+    tokenVault,
+    protocolFeeAccount: protocolFeeAccount,
+    systemConfigAccount,
+    payer: account.publicKey,
+    wsolVault: wsolVaultAta,
+    payerWsolVault: payerWsolAta,
+    protocolWsolVault: protocolWsolAta,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  };
+  const instructionRefund = await program.methods
+    .refund(tokenMetadata.name, tokenMetadata.symbol)
+    .accounts(refundAccounts)
+    .instruction();
+
+  try {
+    const tx = new Transaction();
+
+    const payerWsolAtaData = await provider.connection.getAccountInfo(payerWsolAta);
+    // If payer has not received WSOL before and has no WSOL ata, create it
+    if (!payerWsolAtaData) tx.add(createAssociatedTokenAccountInstruction(
+      account.publicKey,
+      payerWsolAta,
+      account.publicKey,
+      NATIVE_MINT,
+      TOKEN_PROGRAM_ID
+    ));
+    // If protocol account has not received WSOL before and has no WSOL ata, create it
+    const protocolWsolAtaData = await provider.connection.getAccountInfo(protocolWsolAta);
+    if (!protocolWsolAtaData) tx.add(createAssociatedTokenAccountInstruction(
+      account.publicKey,
+      protocolWsolAta,
+      protocolFeeAccount,
+      NATIVE_MINT,
+      TOKEN_PROGRAM_ID
+    ));
+    // Add refund instruction
+    tx.add(instructionRefund);
+    const txHash = await provider.sendAndConfirm(tx, [account]);
+    return {
+      success: true,
+      data: {
+        tx: txHash,
+      }
+    }
+  } catch (error: any) {
+    if (error.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+      return {
+        success: false,
+        message: 'Something went wrong but you have refund successfully',
+      }
+    }
+    return {
+      success: false,
+      message: 'Error refunding' + error
+    }
+  }
+}
