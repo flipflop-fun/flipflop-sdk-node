@@ -23,7 +23,8 @@ const {
   getUrcData,
   getSystemConfig,
   generateMetadataUri,
-  validateImageFile
+  validateImageFile,
+  loadKeypairFromBase58
 } = require('@flipflop-sdk/node');
 
 async function example() {
@@ -65,12 +66,13 @@ async function example() {
   console.log('URC set:', urcResult.urc);
   console.log('Usage count:', urcResult.usageCount);
 
-  // Mint tokens
+  // Mint tokens (pass a Keypair as `minter`)
+  const minter = loadKeypairFromBase58('minter-base58-private-key');
   const mintResult = await mintToken({
     rpc: 'https://api.devnet.solana.com',
     mint: launchResult.mintAddress.toString(),
     urc: 'MYCODE2024',
-    keypairBs58: 'minter-base58-private-key'
+    minter
   });
 
   if (mintResult.success) {
@@ -133,7 +135,8 @@ import {
   SystemConfigAccountOptions,
   SystemConfigAccountData,
   GenerateMetadataUriOptions,
-  MetadataUploadResponse
+  MetadataUploadResponse,
+  loadKeypairFromBase58
 } from '@flipflop-sdk/node';
 
 async function example() {
@@ -170,15 +173,15 @@ async function example() {
 
   const urcResult: SetUrcResponse = await setUrc(setUrcOptions);
   
-  // Mint tokens with type safety
+  // Mint tokens with type safety (note: `minter` is a Keypair)
   const mintOptions: MintTokenOptions = {
     rpc: 'https://api.devnet.solana.com',
-    mint: launchResult.mintAddress.toString(),
+    mint: launchResult.mintAddress, // PublicKey
     urc: 'TST_CODE',
-    keypairBs58: 'minter-base58-private-key'
+    minter: loadKeypairFromBase58('minter-base58-private-key')
   };
 
-  const mintResult: MintTokenResponse = await mintToken(mintOptions);
+  const mintResult = await mintToken(mintOptions);
 }
 ```
 
@@ -333,43 +336,131 @@ const result = await setUrc({
 });
 ```
 
-#### `mintToken(options: MintTokenOptions): Promise<MintTokenResponse>`
+#### `mintToken(options: MintTokenOptions): Promise<ApiResponse<MintTokenResponse>>`
 
 Mint tokens using a URC code.
 
 **Parameters:**
 ```typescript
 interface MintTokenOptions {
-  rpc: string;             // RPC endpoint URL
-  mint: string;            // Token mint address
-  urc: string;             // Universal Referral Code
-  keypairBs58?: string;    // Base58 encoded private key
-  keypairFile?: string;    // Path to keypair file
+  rpc: string;                  // RPC endpoint URL
+  minter: Keypair;              // The minter's Keypair (wallet that pays & receives)
+  mint: PublicKey;              // Token mint address (a string is also accepted; it will be converted)
+  urc: string;                  // Universal Referral Code
+  lookupTableAccount?: PublicKey; // Optional; defaults to network LUT from CONFIGS
 }
 ```
 
 **Returns:**
 ```typescript
-interface MintTokenResponse {
+// Generic API wrapper used across the SDK
+interface ApiResponse<T> {
   success: boolean;
+  data?: T;
   message?: string;
-  data?: {
-    tx: string;
-    owner: PublicKey;
-    tokenAccount: PublicKey;
-  }
+}
+
+// Mint call payload on success
+interface MintTokenResponse {
+  tx: string;              // Transaction signature
+  owner: PublicKey;        // Minter's public key
+  tokenAccount: PublicKey; // Associated token account that received the mint
 }
 ```
 
+- The function resolves to `Promise<ApiResponse<MintTokenResponse>>`.
+- On success, `message` is "Mint succeeded" and `data` contains `tx`, `owner`, and `tokenAccount`.
+
 **Example:**
 ```javascript
+const { loadKeypairFromBase58 } = require('@flipflop-sdk/node');
+
+const minter = loadKeypairFromBase58('minter-base58-private-key');
 const result = await mintToken({
   rpc: 'https://api.devnet.solana.com',
-  mint: 'TokenMintAddress',
+  mint: 'TokenMintAddress', // string is accepted; SDK will convert internally
   urc: 'UNIQUECODE',
-  keypairBs58: 'minter-base58-private-key'
+  minter
 });
+
+if (result.success) {
+  console.log('tx:', result.data.tx);
+  console.log('owner:', result.data.owner.toBase58());
+  console.log('tokenAccount:', result.data.tokenAccount.toBase58());
+} else {
+  console.error('Mint failed:', result.message);
+}
 ```
+
+**Notes:**
+- `urc` must be a valid and active referral code on-chain; the SDK derives and verifies the referral PDA internally.
+- If `lookupTableAccount` is not provided, the SDK uses the preconfigured LUT for the detected network (via `CONFIGS`).
+- Common error messages include metadata fetch failures and on-chain validation errors; in such cases you'll receive `{ success: false, message: 'Mint operation failed: ...' }`.
+
+#### `refundToken(options: RefundTokenOptions): Promise<ApiResponse<RefundTokenResponse>>`
+
+Request a refund for the caller's tokens according to protocol rules.
+
+Parameters:
+```typescript
+interface RefundTokenOptions {
+  rpc: string;           // RPC endpoint URL
+  mint: PublicKey;       // Token mint address (a string is also accepted; it will be converted)
+  owner: Keypair;        // The owner's Keypair (the account that holds tokens to refund)
+}
+```
+
+Returns:
+```typescript
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
+interface RefundTokenResponse {
+  tx: string;  // Transaction signature
+}
+```
+
+Example (JavaScript):
+```javascript
+const { refundToken, loadKeypairFromBase58 } = require('@flipflop-sdk/node');
+
+const owner = loadKeypairFromBase58('owner-base58-private-key');
+const result = await refundToken({
+  rpc: 'https://api.devnet.solana.com',
+  mint: 'TokenMintAddress', // string is accepted; SDK will convert internally
+  owner
+});
+
+if (result.success) {
+  console.log('Refund tx:', result.data.tx);
+} else {
+  console.error('Refund failed:', result.message);
+}
+```
+
+Example (TypeScript):
+```typescript
+import { refundToken, RefundTokenOptions } from '@flipflop-sdk/node';
+import { PublicKey } from '@solana/web3.js';
+
+const options: RefundTokenOptions = {
+  rpc: 'https://api.devnet.solana.com',
+  mint: new PublicKey('TokenMintAddress'),
+  owner: loadKeypairFromBase58('owner-base58-private-key'),
+};
+
+const res = await refundToken(options);
+```
+
+Notes:
+- The owner must match the protocol's refund record for this mint; otherwise you'll receive "Only User Account Allowed".
+- The SDK automatically creates WSOL associated token accounts for the owner and the protocol fee account if missing.
+- Typical on-chain failures include: NotEnoughTokensToRefund, RefundTokensIsZero, UserBalanceNotEnoughForRefund, VaultBalanceNotEnoughForRefund, RefundInProgress, InvalidRefundFeeRate, RefundOnlyAllowedInTargetEras.
+- On success, you'll receive `{ success: true, data: { tx } }`.
+- On failure, `message` may contain strings like "Error refunding..." or "Something went wrong but you have refund successfully". In rare cases you may see "Mint operation failed: ..." from a shared error handler.
 
 #### `getMintData(options: GetMintDataOptions): Promise<GetMintDataResponse>`
 
