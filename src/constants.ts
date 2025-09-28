@@ -77,7 +77,7 @@ export const TOKEN_PARAMS = {
     reduceRatio: new BN("75"),
     initialMintSize: new BN("20000000000000"),
     initialTargetMintSizePerEpoch: new BN("200000000000000"),
-    feeRate: new BN("50000000"),
+    feeRate: new BN("20000000"),
     liquidityTokensRatio: new BN("20"),
   }
 };
