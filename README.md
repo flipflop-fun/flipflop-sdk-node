@@ -348,6 +348,7 @@ interface MintTokenOptions {
   mint: PublicKey;              // Token mint address (a string is also accepted; it will be converted)
   urc: string;                  // Universal Referral Code
   lookupTableAccount?: PublicKey; // Optional; defaults to network LUT from CONFIGS
+  skipPreflight?: boolean;      // Optional; skip transaction preflight checks (default: false)
 }
 ```
 
@@ -380,7 +381,8 @@ const result = await mintToken({
   rpc: 'https://api.devnet.solana.com',
   mint: 'TokenMintAddress', // string is accepted; SDK will convert internally
   urc: 'UNIQUECODE',
-  minter
+  minter,
+  skipPreflight: true // Optional: skip preflight checks for faster execution
 });
 
 if (result.success) {

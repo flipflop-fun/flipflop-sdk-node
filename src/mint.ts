@@ -118,6 +118,7 @@ export const mintToken = async (
         : new PublicKey(config.lookupTableAccount),
       protocolFeeAccount,
       config.allowOwnerOffCurveForProtocolFeeAccount,
+      options.skipPreflight ?? false,
     );
   } catch (error) {
     return {

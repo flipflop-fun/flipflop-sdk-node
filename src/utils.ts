@@ -402,6 +402,7 @@ export const mintBy = async (
   lookupTableAddress: PublicKey,
   protocolFeeAccount: PublicKey,
   allowOwnerOffCurveForProtocolFeeAccount: boolean,
+  skipPreflight: boolean,
 ): Promise<ApiResponse<MintTokenResponse>> => {
   // check balance SOL
   let balance = await getSolanaBalance(provider.connection, account.publicKey);
@@ -724,6 +725,7 @@ export const mintBy = async (
       messageV0,
       provider.connection,
       account,
+      skipPreflight,
       "confirmed"
     );
 
@@ -750,11 +752,12 @@ export const processVersionedTransaction = async (
   messageV0: VersionedTransaction,
   connection: Connection,
   wallet: Keypair,
+  skipPreflight: boolean = false,
   confirmLevel: "processed" | "confirmed" | "finalized" = "confirmed"
 ) => {
   messageV0.sign([wallet]);
   const signature = await connection.sendTransaction(messageV0, {
-    skipPreflight: false,
+    skipPreflight,
   });
   const latestBlockhash = await connection.getLatestBlockhash();
 

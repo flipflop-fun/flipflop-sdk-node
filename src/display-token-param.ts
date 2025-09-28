@@ -5,7 +5,7 @@ import { TokenParams } from "./types";
 // Define the options interface
 interface DisplayTokenParamOptions {
   rpc: string;
-  tokenType: "standard" | "meme";
+  tokenType: "standard" | "meme" | "test";
 }
 
 // Main function to display token parameters

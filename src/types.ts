@@ -5,7 +5,7 @@ import { FairMintToken } from "./types/fair_mint_token";
 
 // Add more types from IDL as needed
 export type NetworkType = "local" | "devnet" | "mainnet";
-export type TokenType = "meme" | "standard";
+export type TokenType = "meme" | "standard" | "test";
 
 export interface RemainingAccount {
   pubkey: PublicKey;
@@ -184,6 +184,7 @@ export interface MintTokenOptions {
   mint: PublicKey;
   urc: string;
   lookupTableAccount?: PublicKey;
+  skipPreflight?: boolean;
 }
 export interface MintTokenResponse {
   tx: string;
