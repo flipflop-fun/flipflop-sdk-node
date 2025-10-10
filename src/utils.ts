@@ -9,7 +9,6 @@ import {
   Transaction,
   AddressLookupTableProgram,
   sendAndConfirmTransaction,
-  TransactionInstruction,
 } from "@solana/web3.js";
 import fs from "fs";
 import bs58 from "bs58";
@@ -35,10 +34,8 @@ import {
 } from "./types";
 import {
   createAssociatedTokenAccountInstruction,
-  createSyncNativeInstruction,
   getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
-  getOrCreateAssociatedTokenAccount,
   NATIVE_MINT,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -53,7 +50,6 @@ import {
   REFERRAL_CODE_SEED,
   REFUND_SEEDS,
   RENT_PROGRAM_ID,
-  SYSTEM_CONFIG_SEEDS,
   TOKEN_METADATA_PROGRAM_ID,
 } from "./constants";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
