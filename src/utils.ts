@@ -9,6 +9,7 @@ import {
   Transaction,
   AddressLookupTableProgram,
   sendAndConfirmTransaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import fs from "fs";
 import bs58 from "bs58";
@@ -413,15 +414,21 @@ export const mintBy = async (
     };
   }
 
-// ######
-  const destination = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    account,
+  // const destination = await getOrCreateAssociatedTokenAccount(
+  //   provider.connection,
+  //   account,
+  //   mintAccount,
+  //   account.publicKey,
+  //   false,
+  //   undefined,
+  //   undefined,
+  //   TOKEN_PROGRAM_ID
+  // );
+
+  const destinationAta = await getAssociatedTokenAddress(
     mintAccount,
     account.publicKey,
     false,
-    undefined,
-    undefined,
     TOKEN_PROGRAM_ID
   );
 
@@ -479,16 +486,31 @@ export const mintBy = async (
     };
   }
 
-  const protocolWsolVault = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    account,
+  // const protocolWsolVault = await getOrCreateAssociatedTokenAccount(
+  //   provider.connection,
+  //   account,
+  //   NATIVE_MINT,
+  //   protocolFeeAccount,
+  //   allowOwnerOffCurveForProtocolFeeAccount,
+  //   undefined,
+  //   undefined,
+  //   TOKEN_PROGRAM_ID
+  // );
+
+  const protocolWsolVaultAta = await getAssociatedTokenAddress(
     NATIVE_MINT,
     protocolFeeAccount,
     allowOwnerOffCurveForProtocolFeeAccount,
-    undefined,
-    undefined,
     TOKEN_PROGRAM_ID
   );
+
+  const protocolWsolVaultInfo = await provider.connection.getAccountInfo(protocolWsolVaultAta);
+  if (!protocolWsolVaultInfo) {
+    return {
+      success: false,
+      message: "Protocol Wsol Vault account not found",
+    };
+  }
 
   const wsolVaultAta = await getAssociatedTokenAddress(
     NATIVE_MINT,
@@ -557,7 +579,7 @@ export const mintBy = async (
 
   const context = {
     mint: mintAccount,
-    destination: destination.address,
+    destination: destinationAta,
     destinationWsolAta: destinationWsolAta,
     refundAccount: refundAccount,
     user: account.publicKey,
@@ -571,7 +593,7 @@ export const mintBy = async (
     referrerMain: referrerMain,
     referralAccount: referralAccount,
     protocolFeeAccount,
-    protocolWsolVault: protocolWsolVault.address,
+    protocolWsolVault: protocolWsolVaultAta,
     poolState: poolAddress,
     ammConfig: cpSwapConfigAddress,
     cpSwapProgram: cpSwapProgram,
@@ -693,13 +715,28 @@ export const mintBy = async (
   ];
   // ===================================================================================
   try {
-    const ix0 = ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 }); // or use --compute-unit-limit 400000 to run solana-test-validator
+    const instructions = [];
+    instructions.push(ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 })); // or use --compute-unit-limit 400000 to run solana-test-validator
+
+    const destinationAtaInfo = await provider.connection.getAccountInfo(destinationAta);
+    if (!destinationAtaInfo) {
+      instructions.push(
+        createAssociatedTokenAccountInstruction(
+          account.publicKey,
+          destinationAta,
+          account.publicKey,
+          mintAccount,
+          TOKEN_PROGRAM_ID
+        )
+      );
+    }
 
     const ix = await program.methods
       .mintTokens(tokenMetadata.name, tokenMetadata.symbol, codeHash.toBuffer())
       .accounts(context)
       .remainingAccounts(remainingAccounts)
       .instruction();
+    instructions.push(ix);
 
     // Create versioned transaction with LUT
     const accountInfo = await provider.connection.getAccountInfo(lookupTableAddress);
@@ -718,7 +755,7 @@ export const mintBy = async (
       new TransactionMessage({
         payerKey: account.publicKey,
         recentBlockhash: (await provider.connection.getLatestBlockhash()).blockhash,
-        instructions: [ix0, ix],
+        instructions,
       }).compileToV0Message([lookupTable])
     );
     const result = await processVersionedTransaction(
@@ -734,7 +771,7 @@ export const mintBy = async (
       message: "Mint succeeded",
       data: {
         owner: account.publicKey,
-        tokenAccount: destination.address,
+        tokenAccount: destinationAta,
         tx: result.data?.tx || "",
       },
     };
