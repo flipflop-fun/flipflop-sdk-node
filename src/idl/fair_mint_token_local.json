@@ -735,6 +735,9 @@
         },
         {
           "name": "protocol_fee_account",
+          "docs": [
+            "protocol fee account"
+          ],
           "writable": true
         },
         {
@@ -1045,17 +1048,51 @@
               }
             ],
             "program": {
-              "kind": "account",
-              "path": "cp_swap_program"
+              "kind": "const",
+              "value": [
+                169,
+                42,
+                90,
+                139,
+                79,
+                41,
+                89,
+                82,
+                132,
+                37,
+                80,
+                170,
+                147,
+                253,
+                91,
+                149,
+                181,
+                172,
+                230,
+                168,
+                235,
+                146,
+                12,
+                147,
+                148,
+                46,
+                67,
+                105,
+                12,
+                32,
+                236,
+                115
+              ]
             }
           }
         },
         {
-          "name": "amm_config"
+          "name": "amm_config",
+          "address": "D4FPEruKEHrG5TenZ2mpDGEfu1iUvTiqBxvpU8HLBvC2"
         },
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "token_0_mint"
@@ -1185,6 +1222,9 @@
         },
         {
           "name": "lp_mint",
+          "docs": [
+            "pool lp mint, init by cp-swap"
+          ],
           "writable": true
         },
         {
@@ -1226,7 +1266,7 @@
       "accounts": [
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "owner",
@@ -1273,6 +1313,7 @@
           "docs": [
             "Config account"
           ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1340,36 +1381,36 @@
               "value": [
                 169,
                 42,
-                49,
-                26,
-                136,
-                152,
-                134,
-                77,
+                90,
+                139,
+                79,
+                41,
+                89,
+                82,
+                132,
+                37,
+                80,
+                170,
+                147,
+                253,
+                91,
+                149,
+                181,
+                172,
+                230,
+                168,
+                235,
+                146,
+                12,
+                147,
+                148,
+                46,
+                67,
+                105,
+                12,
                 32,
-                99,
-                200,
-                252,
-                203,
-                83,
-                110,
-                30,
-                138,
-                48,
-                77,
-                141,
-                83,
-                152,
-                76,
-                10,
-                78,
-                179,
-                193,
-                68,
-                7,
-                214,
-                116,
-                231
+                236,
+                115
               ]
             }
           }
@@ -1488,7 +1529,7 @@
       "accounts": [
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "payer",
@@ -1535,6 +1576,7 @@
           "docs": [
             "Config account"
           ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1602,36 +1644,36 @@
               "value": [
                 169,
                 42,
-                49,
-                26,
-                136,
-                152,
-                134,
-                77,
+                90,
+                139,
+                79,
+                41,
+                89,
+                82,
+                132,
+                37,
+                80,
+                170,
+                147,
+                253,
+                91,
+                149,
+                181,
+                172,
+                230,
+                168,
+                235,
+                146,
+                12,
+                147,
+                148,
+                46,
+                67,
+                105,
+                12,
                 32,
-                99,
-                200,
-                252,
-                203,
-                83,
-                110,
-                30,
-                138,
-                48,
-                77,
-                141,
-                83,
-                152,
-                76,
-                10,
-                78,
-                179,
-                193,
-                68,
-                7,
-                214,
-                116,
-                231
+                236,
+                115
               ]
             }
           }
@@ -1746,7 +1788,7 @@
       "accounts": [
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "payer",
@@ -1793,6 +1835,7 @@
           "docs": [
             "Config account"
           ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1860,36 +1903,36 @@
               "value": [
                 169,
                 42,
-                49,
-                26,
-                136,
-                152,
-                134,
-                77,
+                90,
+                139,
+                79,
+                41,
+                89,
+                82,
+                132,
+                37,
+                80,
+                170,
+                147,
+                253,
+                91,
+                149,
+                181,
+                172,
+                230,
+                168,
+                235,
+                146,
+                12,
+                147,
+                148,
+                46,
+                67,
+                105,
+                12,
                 32,
-                99,
-                200,
-                252,
-                203,
-                83,
-                110,
-                30,
-                138,
-                48,
-                77,
-                141,
-                83,
-                152,
-                76,
-                10,
-                78,
-                179,
-                193,
-                68,
-                7,
-                214,
-                116,
-                231
+                236,
+                115
               ]
             }
           }
@@ -2004,7 +2047,7 @@
       "accounts": [
         {
           "name": "cp_swap_program",
-          "address": "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
+          "address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
         },
         {
           "name": "owner",
@@ -2051,6 +2094,7 @@
           "docs": [
             "Config account"
           ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -2118,36 +2162,36 @@
               "value": [
                 169,
                 42,
-                49,
-                26,
-                136,
-                152,
-                134,
-                77,
+                90,
+                139,
+                79,
+                41,
+                89,
+                82,
+                132,
+                37,
+                80,
+                170,
+                147,
+                253,
+                91,
+                149,
+                181,
+                172,
+                230,
+                168,
+                235,
+                146,
+                12,
+                147,
+                148,
+                46,
+                67,
+                105,
+                12,
                 32,
-                99,
-                200,
-                252,
-                203,
-                83,
-                110,
-                30,
-                138,
-                48,
-                77,
-                141,
-                83,
-                152,
-                76,
-                10,
-                78,
-                179,
-                193,
-                68,
-                7,
-                214,
-                116,
-                231
+                236,
+                115
               ]
             }
           }
@@ -2813,6 +2857,68 @@
           }
         },
         {
+          "name": "referrer_throttle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  114,
+                  99,
+                  95,
+                  116,
+                  104,
+                  114,
+                  111,
+                  116,
+                  116,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  182,
+                  170,
+                  55,
+                  20,
+                  102,
+                  217,
+                  47,
+                  143,
+                  149,
+                  33,
+                  37,
+                  172,
+                  229,
+                  131,
+                  149,
+                  124,
+                  52,
+                  126,
+                  53,
+                  73,
+                  199,
+                  69,
+                  248,
+                  211,
+                  168,
+                  196,
+                  34,
+                  161,
+                  132,
+                  131,
+                  85,
+                  210
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -3267,6 +3373,19 @@
         195,
         222,
         70
+      ]
+    },
+    {
+      "name": "ReferrerThrottleData",
+      "discriminator": [
+        156,
+        48,
+        238,
+        20,
+        112,
+        82,
+        26,
+        5
       ]
     },
     {
@@ -3897,6 +4016,146 @@
       "code": 6098,
       "name": "InvalidMetadataProgram",
       "msg": "Invalid metadata program"
+    },
+    {
+      "code": 6099,
+      "name": "SwapInProgress",
+      "msg": "Swap operation in progress, please try again later"
+    },
+    {
+      "code": 6100,
+      "name": "DepositInProgress",
+      "msg": "Deposit operation in progress, please try again later"
+    },
+    {
+      "code": 6101,
+      "name": "WithdrawInProgress",
+      "msg": "Withdraw operation in progress, please try again later"
+    },
+    {
+      "code": 6102,
+      "name": "BurnLpInProgress",
+      "msg": "Burn LP tokens operation in progress, please try again later"
+    },
+    {
+      "code": 6103,
+      "name": "CreatePoolInProgress",
+      "msg": "Create pool operation in progress, please try again later"
+    },
+    {
+      "code": 6104,
+      "name": "InvalidProgramId",
+      "msg": "Invalid program id"
+    },
+    {
+      "code": 6105,
+      "name": "InvalidRemainingCpSwapProgram",
+      "msg": "Invalid remaining cp swap program"
+    },
+    {
+      "code": 6106,
+      "name": "InvalidRemainingTokenProgram",
+      "msg": "Invalid remaining token program"
+    },
+    {
+      "code": 6107,
+      "name": "InvalidRemainingAssociatedTokenProgram",
+      "msg": "Invalid remaining associated token program"
+    },
+    {
+      "code": 6108,
+      "name": "InvalidRemainingSystemProgram",
+      "msg": "Invalid remaining system program"
+    },
+    {
+      "code": 6109,
+      "name": "InvalidRemainingRentProgram",
+      "msg": "Invalid remaining rent program"
+    },
+    {
+      "code": 6110,
+      "name": "InvalidRemainingAuthority",
+      "msg": "Invalid remaining authority program"
+    },
+    {
+      "code": 6111,
+      "name": "InvalidRemainingWrongTokenMintOrder",
+      "msg": "Invalid remaining wrong token mint order"
+    },
+    {
+      "code": 6112,
+      "name": "InvalidRemainingWrongTokenMint",
+      "msg": "Invalid remaining wrong token mint program"
+    },
+    {
+      "code": 6113,
+      "name": "InvalidRemainingCreatorMustBeSigner",
+      "msg": "Invalid remaining creator must be signer"
+    },
+    {
+      "code": 6114,
+      "name": "InvalidRemainingPoolState",
+      "msg": "Invalid remaining pool state program"
+    },
+    {
+      "code": 6115,
+      "name": "InvalidRemainingToken0Vault",
+      "msg": "Invalid remaining token 0 vault program"
+    },
+    {
+      "code": 6116,
+      "name": "InvalidRemainingToken1Vault",
+      "msg": "Invalid remaining token 1 vault program"
+    },
+    {
+      "code": 6117,
+      "name": "InvalidRemainingCreatePoolFee",
+      "msg": "Invalid remaining create pool fee program"
+    },
+    {
+      "code": 6118,
+      "name": "InvalidRemainingObservationState",
+      "msg": "Invalid remaining observation state program"
+    },
+    {
+      "code": 6119,
+      "name": "InvalidRemainingCreatorToken0",
+      "msg": "Invalid remaining creator token 0 program"
+    },
+    {
+      "code": 6120,
+      "name": "InvalidRemainingCreatorToken1",
+      "msg": "Invalid remaining creator token 1 program"
+    },
+    {
+      "code": 6121,
+      "name": "InvalidRemainingLpMint",
+      "msg": "Invalid remaining lp mint program"
+    },
+    {
+      "code": 6122,
+      "name": "InvalidRemainingCreatorLpToken",
+      "msg": "Invalid remaining creator lp token program"
+    },
+    {
+      "code": 6123,
+      "name": "InvalidRemainingAmmConfig",
+      "msg": "Invalid remaining amm config"
+    },
+    {
+      "code": 6124,
+      "name": "InvalidRemainingToken0ProgramId",
+      "msg": "Invalid remaining token 0 program id"
+    },
+    {
+      "code": 6125,
+      "name": "InvalidRemainingToken1ProgramId",
+      "msg": "Invalid remaining token 1 program id"
+    },
+    {
+      "code": 6126,
+      "name": "URCActivationLimitExceeded",
+      "msg": "URC activation exceeds limit in current window"
     }
   ],
   "types": [
@@ -4484,6 +4743,22 @@
                 32
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReferrerThrottleData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "window_start",
+            "type": "u64"
+          },
+          {
+            "name": "activation_count",
+            "type": "u32"
           }
         ]
       }

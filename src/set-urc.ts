@@ -11,6 +11,7 @@ import {
   REFERRAL_CODE_SEED,
   REFERRAL_SEED,
   SYSTEM_CONFIG_SEEDS,
+  URC_THROTTLE_SEEDS
 } from "./constants";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -76,6 +77,11 @@ export const setUrc = async (
       programId
     );
 
+    const [referrerThrottle] = PublicKey.findProgramAddressSync(
+      [Buffer.from(URC_THROTTLE_SEEDS), new PublicKey(CONFIGS[getNetworkType(options.rpc)].systemManagerAccount).toBuffer()],
+      programId
+    );
+
     const [systemConfigAccount] = PublicKey.findProgramAddressSync(
       [
         Buffer.from(SYSTEM_CONFIG_SEEDS),
@@ -138,6 +144,7 @@ export const setUrc = async (
       payer: refAccount.publicKey,
       referrerAta: referrerAta,
       codeAccount: codeAccount,
+      referrerThrottle,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
