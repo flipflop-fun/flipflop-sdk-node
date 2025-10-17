@@ -78,7 +78,7 @@ export const setUrc = async (
     );
 
     const [referrerThrottle] = PublicKey.findProgramAddressSync(
-      [Buffer.from(URC_THROTTLE_SEEDS), new PublicKey(CONFIGS[getNetworkType(options.rpc)].systemManagerAccount).toBuffer()],
+      [Buffer.from(URC_THROTTLE_SEEDS), mintAccount.toBuffer()],
       programId
     );
 
