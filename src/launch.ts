@@ -8,6 +8,7 @@ import {
   TOKEN_METADATA_PROGRAM_ID,
   TOKEN_PARAMS,
   LAUNCH_RULE_SEEDS,
+  URC_THROTTLE_SEEDS,
 } from "./constants";
 import {
   getAssociatedTokenAddress,
@@ -127,6 +128,14 @@ export const launchToken = async (
       TOKEN_METADATA_PROGRAM_ID
     );
 
+    const [referrerThrottleAccount] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from(URC_THROTTLE_SEEDS),
+        mintAccount.toBuffer(),
+      ],
+      programId
+    );
+
     const info = await provider.connection.getAccountInfo(mintAccount);
     if (info) {
       return {
@@ -169,6 +178,7 @@ export const launchToken = async (
       protocolFeeAccount: protocolFeeAccount,
       tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
       launchRuleAccount: launchRuleAccountPda,
+      referrerThrottleAccount,
     };
 
     const ix0 = ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 });
