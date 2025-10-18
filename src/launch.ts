@@ -128,7 +128,7 @@ export const launchToken = async (
       TOKEN_METADATA_PROGRAM_ID
     );
 
-    const [referrerThrottleAccount] = PublicKey.findProgramAddressSync(
+    const [referrerThrottle] = PublicKey.findProgramAddressSync(
       [
         Buffer.from(URC_THROTTLE_SEEDS),
         mintAccount.toBuffer(),
@@ -178,7 +178,7 @@ export const launchToken = async (
       protocolFeeAccount: protocolFeeAccount,
       tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
       launchRuleAccount: launchRuleAccountPda,
-      referrerThrottleAccount,
+      referrerThrottle,
     };
 
     const ix0 = ComputeBudgetProgram.setComputeUnitLimit({ units: 500000 });
